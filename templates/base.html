@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Padakhep Document Tracker{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="logo-mark">PM</div>
+                <div>
+                    <strong>Padakhep</strong>
+                    <span>Document Tracker</span>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+
+                {% if global_can_edit %}
+                    <a href="{% url 'document_create' %}" class="nav-link">New Document</a>
+                {% endif %}
+
+                    <a href="{% url 'document_list' %}" class="nav-link">All Documents</a>
+                    <a href="{% url 'pending_documents' %}" class="nav-link">Pending Documents</a>
+
+                {% if global_can_view_reports %}
+                    <a href="{% url 'reports_dashboard' %}" class="nav-link">Reports</a>
+                {% endif %}
+
+                {% if request.user.is_superuser %}
+                    <a href="/admin/" class="nav-link">Admin Panel</a>
+                {% endif %}
+            </nav>
+        </aside>
+
+        <main class="main-area">
+            <header class="topbar">
+                <div>
+                    <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+                </div>
+
+                <div class="user-area">
+                    <span>
+                        {{ request.user.username }}
+                        {% if request.user.profile and request.user.profile.department %}
+                            · {{ request.user.profile.department.name }}
+                        {% endif %}
+                    </span>
+
+                    <form method="post" action="{% url 'logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="logout-btn">Logout</button>
+                    </form>
+                </div>
+            </header>
+
+            <section class="content">
+                {% block content %}{% endblock %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>

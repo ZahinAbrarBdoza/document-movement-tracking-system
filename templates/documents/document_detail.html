@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ document.tracking_id }} | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Document Details{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Document Details</h2>
+            <p>ডকুমেন্টের পূর্ণ তথ্য, বর্তমান অবস্থা এবং মুভমেন্ট হিস্ট্রি দেখুন।</p>
+        </div>
+
+        <a href="{% url 'document_list' %}" class="btn-secondary">Back to Documents</a>
+    </section>
+
+    <section class="detail-layout">
+        <div class="detail-card">
+            <div class="detail-header">
+                <span class="tracking">{{ document.tracking_id }}</span>
+                <h2>{{ document.subject }}</h2>
+                <p>
+                    Created by
+                    {% if document.created_by %}
+                        {{ document.created_by.username }}
+                    {% else %}
+                        Unknown
+                    {% endif %}
+                    on {{ document.created_at|date:"d M Y, h:i A" }}
+                </p>
+            </div>
+
+            <div class="detail-body">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span>Entry Type</span>
+                        <strong>{{ document.get_entry_type_display }}</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Document Type</span>
+                        <strong>
+                            {% if document.document_type %}
+                                {{ document.document_type }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Source Zone</span>
+                        <strong>
+                            {% if document.source_zone %}
+                                {{ document.source_zone }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Source Department</span>
+                        <strong>
+                            {% if document.source_department %}
+                                {{ document.source_department }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Destination Department</span>
+                        <strong>
+                            {% if document.destination_department %}
+                                {{ document.destination_department }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Current Department</span>
+                        <strong>
+                            {% if document.current_department %}
+                                {{ document.current_department }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Received Date</span>
+                        <strong>
+                            {% if document.received_date %}
+                                {{ document.received_date|date:"d M Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Sent Date</span>
+                        <strong>
+                            {% if document.sent_date %}
+                                {{ document.sent_date|date:"d M Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item full">
+                        <span>Remarks / মন্তব্য</span>
+                        <strong class="remarks-box">
+                            {% if document.remarks %}
+                                {{ document.remarks }}
+                            {% else %}
+                                No remarks added.
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <aside class="side-stack">
+            <div class="quick-card">
+                <h3>Current Status</h3>
+
+                <span class="status-large status-{{ document.status }}">
+                    {{ document.get_status_display }}
+                </span>
+
+                <div class="meta-list">
+                    <div class="meta-row">
+                        <span>Priority</span>
+                        <strong>{{ document.get_priority_display }}</strong>
+                    </div>
+
+                    <div class="meta-row">
+                        <span>Aging</span>
+                        <strong>{{ document.aging_days }} days</strong>
+                    </div>
+
+                    <div class="meta-row">
+                        <span>Created</span>
+                        <strong>{{ document.created_at|date:"d M Y" }}</strong>
+                    </div>
+
+                    <div class="meta-row">
+                        <span>Updated</span>
+                        <strong>{{ document.updated_at|date:"d M Y" }}</strong>
+                    </div>
+
+                    <div class="meta-row">
+                        <span>Closed</span>
+                        <strong>
+                            {% if document.closed_at %}
+                                {{ document.closed_at|date:"d M Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    {% if can_edit %}
+                        <a href="{% url 'document_update_movement' document.pk %}" class="small-action">
+                            Status Update / Forward
+                        </a>
+                        <a href="{% url 'document_edit' document.pk %}" class="small-action">
+                            Edit Document
+                        </a>
+                    {% endif %}
+
+                    {% if request.user.is_superuser %}
+                        <a href="/admin/documents/document/{{ document.pk }}/change/" class="small-action">
+                            Edit in Admin
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="quick-card">
+                <h3>Attachment</h3>
+
+                {% if document.attachment %}
+                    <p class="small-muted">Uploaded file is available.</p>
+                    <a href="{{ document.attachment.url }}" class="attachment-link" target="_blank">
+                        View Attachment
+                    </a>
+                {% else %}
+                    <p class="small-muted">No attachment uploaded.</p>
+                {% endif %}
+            </div>
+
+            <div class="quick-card">
+                <h3>Movement History</h3>
+
+                {% if movements %}
+                    <div class="timeline">
+                        {% for movement in movements %}
+                            <div class="timeline-item">
+                                <strong>{{ movement.get_action_display }}</strong>
+
+                                <div class="timeline-meta">
+                                    {{ movement.created_at|date:"d M Y, h:i A" }}
+                                    {% if movement.performed_by %}
+                                        by {{ movement.performed_by.username }}
+                                    {% endif %}
+                                </div>
+
+                                <p>
+                                    From:
+                                    {% if movement.from_department %}
+                                        {{ movement.from_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                    <br>
+                                    To:
+                                    {% if movement.to_department %}
+                                        {{ movement.to_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </p>
+
+                                {% if movement.remarks %}
+                                    <p>{{ movement.remarks }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="small-muted">
+                        No movement history yet. It will appear when forwarding/status update is added.
+                    </p>
+                {% endif %}
+            </div>
+        </aside>
+    </section>
+{% endblock %}

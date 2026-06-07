@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+    <section class="wave-banner">
+        <h2>ডকুমেন্ট মুভমেন্ট ড্যাশবোর্ড</h2>
+        <p>
+            HR, ADT, OPS এবং Zone অফিসের মধ্যে অফিসিয়াল চিঠি ও ডকুমেন্টের
+            বর্তমান অবস্থা, পেন্ডিং কাজ এবং সাম্প্রতিক মুভমেন্ট এক জায়গায় দেখুন।
+        </p>
+        <div class="dashboard-actions">
+            {% if can_edit %}
+                <a href="{% url 'document_create' %}" class="dashboard-action primary">
+                    + New Document
+                </a>
+            {% endif %}
+
+            <a href="{% url 'pending_documents' %}" class="dashboard-action">
+                View Pending
+            </a>
+
+            <a href="{% url 'reports_dashboard' %}" class="dashboard-action">
+                Reports
+            </a>
+
+            <a href="{% url 'export_documents_excel' %}" class="dashboard-action">
+                Export Excel
+            </a>
+        </div>
+    </section>
+
+    <section class="stats-grid">
+        <a href="{% url 'document_list' %}" class="stat-card stat-link">
+            <span>Total Documents</span>
+            <strong>{{ total_documents }}</strong>
+        </a>
+
+        <a href="{% url 'pending_documents' %}" class="stat-card stat-link">
+            <span>Pending Documents</span>
+            <strong>{{ pending_documents }}</strong>
+        </a>
+
+        <a href="{% url 'document_list' %}?status=closed" class="stat-card stat-link">
+            <span>Closed Documents</span>
+            <strong>{{ closed_documents }}</strong>
+        </a>
+
+        <a href="{% url 'pending_documents' %}?priority=urgent" class="stat-card stat-link">
+            <span>Urgent Pending</span>
+            <strong>{{ urgent_documents }}</strong>
+        </a>
+        {% if user_department %}
+            <a href="{% url 'pending_documents' %}?department={{ user_department.id }}" class="stat-card stat-link">
+                <span>My Department Pending</span>
+                <strong>{{ my_department_pending }}</strong>
+                <span class="small-muted">{{ user_department.name }}</span>
+            </a>
+        {% endif %}
+    </section>
+
+    
+
+    <section class="card">
+        <div class="card-header">
+            <h3>Recent Documents</h3>
+        </div>
+
+        <div class="table-wrap">
+            {% if recent_documents %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Subject / বিষয়</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Aging</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in recent_documents %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                        {{ document.tracking_id }}
+                                    </a>
+                                </td>
+                                <td>{{ document.subject }}</td>
+                                <td>
+                                    {% if document.source_zone %}
+                                        {{ document.source_zone }}
+                                    {% elif document.source_department %}
+                                        {{ document.source_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if document.destination_department %}
+                                        {{ document.destination_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge">{{ document.get_status_display }}</span>
+                                </td>
+                                <td>
+                                    {% if document.priority == 'urgent' %}
+                                        <span class="badge urgent">Urgent</span>
+                                    {% else %}
+                                        <span class="badge">Normal</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ document.aging_days }} days</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    No documents found yet.
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

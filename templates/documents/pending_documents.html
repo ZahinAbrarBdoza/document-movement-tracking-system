@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Documents | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Pending Documents{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Pending Documents</h2>
+            <p>যেসব ডকুমেন্ট এখনো ক্লোজ হয়নি সেগুলো এখানে দেখা যাবে।</p>
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{% url 'export_documents_excel' %}?type=pending&{{ request.GET.urlencode }}" class="btn-secondary">
+                Export Excel
+            </a>
+
+            {% if can_edit %}
+                <a href="{% url 'document_create' %}" class="action-btn">+ New Document</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="filter-card">
+        <form method="get">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label for="q">Search / অনুসন্ধান</label>
+                    <input
+                        type="text"
+                        name="q"
+                        id="q"
+                        class="form-control"
+                        value="{{ query }}"
+                        placeholder="Tracking ID, বিষয়, জোন, বিভাগ, মন্তব্য..."
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select name="priority" id="priority" class="form-control">
+                        <option value="">All</option>
+                        {% for value, label in priority_choices %}
+                            <option value="{{ value }}" {% if selected_priority == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <select name="department" id="department" class="form-control">
+                        <option value="">All</option>
+                        {% for department in departments %}
+                            <option value="{{ department.id }}" {% if selected_department == department.id|stringformat:"s" %}selected{% endif %}>
+                                {{ department.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="zone">Zone</label>
+                    <select name="zone" id="zone" class="form-control">
+                        <option value="">All</option>
+                        {% for zone in zones %}
+                            <option value="{{ zone.id }}" {% if selected_zone == zone.id|stringformat:"s" %}selected{% endif %}>
+                                {{ zone.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="date_from">From Date</label>
+                    <input
+                        type="date"
+                        name="date_from"
+                        id="date_from"
+                        class="form-control"
+                        value="{{ selected_date_from }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="date_to">To Date</label>
+                    <input
+                        type="date"
+                        name="date_to"
+                        id="date_to"
+                        class="form-control"
+                        value="{{ selected_date_to }}"
+                    >
+                </div>
+            </div>
+
+            <div class="filter-actions" style="margin-top: 16px;">
+                <button type="submit" class="btn-filter">Search</button>
+                <a href="{% url 'pending_documents' %}" class="btn-clear">Clear</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h3>Pending Records</h3>
+            <span class="result-count">{{ total_found }} found</span>
+        </div>
+
+        <div class="table-wrap">
+            {% if documents %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Subject / বিষয়</th>
+                            <th>Source</th>
+                            <th>Destination</th>
+                            <th>Current</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Aging</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for document in documents %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                        {{ document.tracking_id }}
+                                    </a>
+                                </td>
+
+                                <td class="subject-cell">
+                                    <strong>{{ document.subject }}</strong>
+                                    {% if document.document_type %}
+                                        <span class="small-muted">{{ document.document_type }}</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if document.source_zone %}
+                                        {{ document.source_zone }}
+                                    {% elif document.source_department %}
+                                        {{ document.source_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if document.destination_department %}
+                                        {{ document.destination_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if document.current_department %}
+                                        {{ document.current_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="status-{{ document.status }}">
+                                        {{ document.get_status_display }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {% if document.priority == 'urgent' %}
+                                        <span class="badge urgent">Urgent</span>
+                                    {% else %}
+                                        <span class="badge">Normal</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if document.aging_days >= 7 %}
+                                        <span class="report-number danger">{{ document.aging_days }}</span>
+                                    {% else %}
+                                        {{ document.aging_days }} days
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {{ document.created_at|date:"d M Y" }}
+                                    <span class="small-muted">{{ document.created_at|time:"h:i A" }}</span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">
+                    No pending documents found.
+                </div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}

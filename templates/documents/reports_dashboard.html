@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Reports Dashboard{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Reports Dashboard</h2>
+            <p>পেন্ডিং, ক্লোজড, জোনভিত্তিক, বিভাগভিত্তিক এবং এজিং রিপোর্ট দেখুন।</p>
+        </div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{% url 'export_documents_excel' %}" class="btn-secondary">Export Excel</a>
+            <a href="{% url 'document_list' %}" class="btn-secondary">View All Documents</a>
+        </div>
+    </section>
+
+    <section class="wave-banner">
+        <h2>ডকুমেন্ট রিপোর্ট সামারি</h2>
+        <p>
+            এই ড্যাশবোর্ডের মাধ্যমে কোন বিভাগে কত ডকুমেন্ট পেন্ডিং আছে,
+            কোন জোন থেকে কত ডকুমেন্ট এসেছে এবং কোন ডকুমেন্টগুলো বেশি দিন ধরে পেন্ডিং আছে তা দেখা যাবে।
+        </p>
+    </section>
+
+    <section class="kpi-grid-six">
+        <div class="kpi-card">
+            <span>Total Documents</span>
+            <strong>{{ total_documents }}</strong>
+        </div>
+
+        <div class="kpi-card pending">
+            <span>Pending Documents</span>
+            <strong>{{ pending_documents }}</strong>
+        </div>
+
+        <div class="kpi-card closed">
+            <span>Closed Documents</span>
+            <strong>{{ closed_documents }}</strong>
+        </div>
+
+        <div class="kpi-card urgent">
+            <span>Urgent Pending</span>
+            <strong>{{ urgent_pending }}</strong>
+        </div>
+
+        <div class="kpi-card">
+            <span>Received Today</span>
+            <strong>{{ received_today }}</strong>
+        </div>
+
+        <div class="kpi-card">
+            <span>Sent Today</span>
+            <strong>{{ sent_today }}</strong>
+        </div>
+    </section>
+
+    <section class="report-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3>Department-wise Pending</h3>
+            </div>
+
+            <div class="report-list">
+                {% for department in department_pending %}
+                    <div class="report-row">
+                        <div>
+                            <span class="label">{{ department.name }}</span>
+                            <span class="sub-label">Current pending documents</span>
+                        </div>
+
+                        {% if department.pending_count > 0 %}
+                            <span class="report-number warning">{{ department.pending_count }}</span>
+                        {% else %}
+                            <span class="report-number success">{{ department.pending_count }}</span>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <div class="empty-state">No department data found.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Zone-wise Documents</h3>
+            </div>
+
+            <div class="report-list">
+                {% for zone in zone_documents %}
+                    <div class="report-row">
+                        <div>
+                            <span class="label">{{ zone.name }}</span>
+                            <span class="sub-label">Documents received from this zone</span>
+                        </div>
+
+                        <span class="report-number">{{ zone.document_count }}</span>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">No zone data found.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="report-grid">
+        <div class="card">
+            <div class="card-header report-table-title">
+                <h3>Aging Pending Documents</h3>
+                <span class="result-count">Oldest 10 pending</span>
+            </div>
+
+            <div class="table-wrap">
+                {% if aging_documents %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Subject / বিষয়</th>
+                                <th>Current</th>
+                                <th>Status</th>
+                                <th>Aging</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for document in aging_documents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                            {{ document.tracking_id }}
+                                        </a>
+                                    </td>
+
+                                    <td class="subject-cell">{{ document.subject }}</td>
+
+                                    <td>
+                                        {% if document.current_department %}
+                                            {{ document.current_department }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <span class="status-{{ document.status }}">
+                                            {{ document.get_status_display }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% if document.aging_days >= 7 %}
+                                            <span class="report-number danger">{{ document.aging_days }}</span>
+                                        {% else %}
+                                            <span class="report-number">{{ document.aging_days }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">No pending documents found.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header report-table-title">
+                <h3>Recent Closed Documents</h3>
+                <span class="result-count">Latest 10 closed</span>
+            </div>
+
+            <div class="table-wrap">
+                {% if recent_closed_documents %}
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Tracking ID</th>
+                                <th>Subject / বিষয়</th>
+                                <th>Current</th>
+                                <th>Closed</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for document in recent_closed_documents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                            {{ document.tracking_id }}
+                                        </a>
+                                    </td>
+
+                                    <td class="subject-cell">{{ document.subject }}</td>
+
+                                    <td>
+                                        {% if document.current_department %}
+                                            {{ document.current_department }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if document.closed_at %}
+                                            {{ document.closed_at|date:"d M Y" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="empty-state">No closed documents found yet.</div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="report-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3>Status Summary</h3>
+        </div>
+
+        <div class="report-list">
+            {% for item in status_summary %}
+                <div class="report-row">
+                    <div>
+                        <span class="label">{{ item.label }}</span>
+                        <span class="sub-label">Documents in this status</span>
+                    </div>
+
+                    <span class="report-number">{{ item.count }}</span>
+                </div>
+            {% empty %}
+                <div class="empty-state">No status data found.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Entry Type Summary</h3>
+        </div>
+
+        <div class="report-list">
+            {% for item in entry_type_summary %}
+                <div class="report-row">
+                    <div>
+                        <span class="label">{{ item.label }}</span>
+                        <span class="sub-label">Inward / Outward document count</span>
+                    </div>
+
+                    <span class="report-number">{{ item.count }}</span>
+                </div>
+            {% empty %}
+                <div class="empty-state">No entry type data found.</div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

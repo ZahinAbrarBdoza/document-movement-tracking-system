@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if is_edit %}Edit Document{% else %}New Document{% endif %} | Padakhep Document Tracker
+{% endblock %}
+
+{% block page_title %}
+    {% if is_edit %}Edit Document{% else %}New Document{% endif %}
+{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>
+                {% if is_edit %}
+                    Edit Document
+                {% else %}
+                    New Document Entry
+                {% endif %}
+            </h2>
+            <p>
+                {% if is_edit %}
+                    ডকুমেন্টের তথ্য সংশোধন করুন।
+                {% else %}
+                    নতুন চিঠি বা ডকুমেন্টের তথ্য যুক্ত করুন।
+                {% endif %}
+            </p>
+            <div class="required-note">Fields marked by system validation are required before saving.</div>
+        </div>
+    </section>
+
+    <form method="post" enctype="multipart/form-data" class="form-layout">
+        {% csrf_token %}
+
+        <section class="form-section">
+            <h3>1. Basic Information</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.entry_type.id_for_label }}">{{ form.entry_type.label }}</label>
+                    {{ form.entry_type }}
+                    {% for error in form.entry_type.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.document_type.id_for_label }}">{{ form.document_type.label }}</label>
+                    {{ form.document_type }}
+                    <div class="form-help">Example: Letter, Memo, Application, Report, Complaint</div>
+                    {% for error in form.document_type.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                    {{ form.subject }}
+                    <div class="form-help">Bangla and English both are supported. Example: কর্মী বদলি সংক্রান্ত আবেদন</div>
+                    {% for error in form.subject.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+                    {{ form.priority }}
+                    {% for error in form.priority.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                    {{ form.status }}
+                    <div class="form-help">For new received physical documents, use “Physical Document Received”.</div>
+                    {% for error in form.status.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>2. Source & Destination</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.source_zone.id_for_label }}">{{ form.source_zone.label }}</label>
+                    {{ form.source_zone }}
+                    <div class="form-help">Use this if the document came from a zone.</div>
+                    {% for error in form.source_zone.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.source_department.id_for_label }}">{{ form.source_department.label }}</label>
+                    {{ form.source_department }}
+                    <div class="form-help">Use this if the document came from HR, ADT, OPS, etc.</div>
+                    {% for error in form.source_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.destination_department.id_for_label }}">{{ form.destination_department.label }}</label>
+                    {{ form.destination_department }}
+                    {% for error in form.destination_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.current_department.id_for_label }}">{{ form.current_department.label }}</label>
+                    {{ form.current_department }}
+                    <div class="form-help">Where the physical document is currently located.</div>
+                    {% for error in form.current_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>3. Dates & Physical Copy</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }}</label>
+                    {{ form.received_date }}
+                    {% for error in form.received_date.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.sent_date.id_for_label }}">{{ form.sent_date.label }}</label>
+                    {{ form.sent_date }}
+                    {% for error in form.sent_date.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>4. Remarks & Attachment</h3>
+
+            <div class="form-grid single">
+                <div class="form-group">
+                    <label for="{{ form.remarks.id_for_label }}">{{ form.remarks.label }}</label>
+                    {{ form.remarks }}
+                    {% for error in form.remarks.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.attachment.id_for_label }}">{{ form.attachment.label }}</label>
+                    {{ form.attachment }}
+                    <div class="form-help">Optional: upload scanned copy/photo/PDF if available.</div>
+                    {% for error in form.attachment.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <div class="form-footer">
+            <a href="{% url 'document_list' %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-save">
+                {% if is_edit %}
+                    Update Document
+                {% else %}
+                    Save Document
+                {% endif %}
+            </button>
+        </div>
+    </form>
+{% endblock %}

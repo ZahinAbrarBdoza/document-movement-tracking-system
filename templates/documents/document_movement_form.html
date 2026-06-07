@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Update {{ document.tracking_id }} | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Update Movement{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Update / Forward Document</h2>
+            <p>ডকুমেন্টের বর্তমান অবস্থা পরিবর্তন করুন অথবা অন্য বিভাগে ফরওয়ার্ড করুন।</p>
+        </div>
+
+        <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Back to Details</a>
+    </section>
+
+    <section class="detail-card" style="margin-bottom: 22px;">
+        <div class="detail-header">
+            <span class="tracking">{{ document.tracking_id }}</span>
+            <h2>{{ document.subject }}</h2>
+            <p>
+                Current Department:
+                {% if document.current_department %}
+                    {{ document.current_department }}
+                {% else %}
+                    -
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <form method="post" class="form-layout">
+        {% csrf_token %}
+
+        <section class="form-section">
+            <h3>Movement Information</h3>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.action.id_for_label }}">{{ form.action.label }}</label>
+                    {{ form.action }}
+                    <div class="form-help">
+                        Select what happened: Forwarded, Received, Status Updated, Closed, Returned, etc.
+                    </div>
+                    {% for error in form.action.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.new_status.id_for_label }}">{{ form.new_status.label }}</label>
+                    {{ form.new_status }}
+                    <div class="form-help">
+                        This will update the main document status.
+                    </div>
+                    {% for error in form.new_status.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="{{ form.to_department.id_for_label }}">{{ form.to_department.label }}</label>
+                    {{ form.to_department }}
+                    <div class="form-help">
+                        If forwarding, select the department where the physical document is going.
+                    </div>
+                    {% for error in form.to_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="{{ form.remarks.id_for_label }}">{{ form.remarks.label }}</label>
+                    {{ form.remarks }}
+                    <div class="form-help">
+                        Example: Physical copy forwarded to OPS for necessary action.
+                    </div>
+                    {% for error in form.remarks.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <div class="form-footer">
+            <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-save">Save Update</button>
+        </div>
+    </form>
+{% endblock %}
