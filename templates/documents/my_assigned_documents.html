@@ -1,23 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ page_title|default:"Pending Documents" }} | Padakhep Document Tracker{% endblock %}
-{% block page_title %}{{ page_title|default:"Pending Documents" }}{% endblock %}
+{% block title %}My Assigned Documents | Padakhep Document Tracker{% endblock %}
+{% block page_title %}My Assigned Documents{% endblock %}
 
 {% block content %}
     <section class="page-actions">
         <div>
-            <h2>{{ page_heading|default:"Pending Documents" }}</h2>
-            <p>{{ page_description|default:"Documents that are not closed yet are listed here." }}</p>
-        </div>
-
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="{% url 'export_documents_excel' %}?{{ export_query_prefix }}{{ request.GET.urlencode }}" class="btn-secondary">
-                Export Excel
-            </a>
-
-            {% if can_edit %}
-                <a href="{% url 'document_create' %}" class="action-btn">+ New Document</a>
-            {% endif %}
+            <h2>My Assigned Documents</h2>
+            <p>Open documents assigned to you for action.</p>
         </div>
     </section>
 
@@ -32,67 +22,21 @@
                         id="q"
                         class="form-control"
                         value="{{ query }}"
-                        placeholder="Tracking ID, subject, division, region, area, branch, remarks..."
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="priority">Priority</label>
-                    <select name="priority" id="priority" class="form-control">
-                        <option value="">All</option>
-                        {% for value, label in priority_choices %}
-                            <option value="{{ value }}" {% if selected_priority == value %}selected{% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="department">Department</label>
-                    <select name="department" id="department" class="form-control">
-                        <option value="">All</option>
-                        {% for department in departments %}
-                            <option value="{{ department.id }}" {% if selected_department == department.id|stringformat:"s" %}selected{% endif %}>
-                                {{ department.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="date_from">From Date</label>
-                    <input
-                        type="date"
-                        name="date_from"
-                        id="date_from"
-                        class="form-control"
-                        value="{{ selected_date_from }}"
-                    >
-                </div>
-
-                <div class="form-group">
-                    <label for="date_to">To Date</label>
-                    <input
-                        type="date"
-                        name="date_to"
-                        id="date_to"
-                        class="form-control"
-                        value="{{ selected_date_to }}"
+                        placeholder="Tracking ID, subject, reference no, remarks..."
                     >
                 </div>
             </div>
 
             <div class="filter-actions" style="margin-top: 16px;">
                 <button type="submit" class="btn-filter">Search</button>
-                <a href="{% url clear_url_name %}" class="btn-clear">Clear</a>
+                <a href="{% url 'my_assigned_documents' %}" class="btn-clear">Clear</a>
             </div>
         </form>
     </section>
 
     <section class="card">
         <div class="card-header">
-            <h3>{{ records_title|default:"Pending Records" }}</h3>
+            <h3>Assigned Records</h3>
             <span class="result-count">{{ total_found }} found</span>
         </div>
 
@@ -102,39 +46,25 @@
                     {% csrf_token %}
                     <input type="hidden" name="next" value="{{ request.get_full_path }}">
 
-                    {% if global_can_bulk_forward or global_can_bulk_close %}
-                        <div class="bulk-action-bar">
-                            <label class="checkbox-label bulk-select-all">
-                                <input type="checkbox" class="form-check-input" data-select-all-documents>
-                                <span>Select all visible</span>
-                            </label>
+                    <div class="bulk-action-bar">
+                        <label class="checkbox-label bulk-select-all">
+                            <input type="checkbox" class="form-check-input" data-select-all-documents>
+                            <span>Select all visible</span>
+                        </label>
 
-                            <div class="bulk-action-buttons">
-                                {% if global_can_bulk_forward %}
-                                    <button type="submit" formaction="{% url 'bulk_forward_documents' %}" class="btn-secondary">
-                                        Forward Selected
-                                    </button>
-                                {% endif %}
-
-                                {% if global_can_bulk_close %}
-                                    <button type="submit" formaction="{% url 'bulk_close_documents' %}" class="btn-secondary">
-                                        Close Selected
-                                    </button>
-                                {% endif %}
-                            </div>
+                        <div class="bulk-action-buttons">
+                            <button type="submit" formaction="{% url 'bulk_close_documents' %}" class="btn-secondary">
+                                Close Selected
+                            </button>
                         </div>
-                    {% endif %}
+                    </div>
 
                     <table class="data-table desktop-table">
                         <thead>
                             <tr>
-                                {% if global_can_bulk_forward or global_can_bulk_close %}
-                                    <th class="bulk-checkbox-column">Select</th>
-                                {% endif %}
+                                <th class="bulk-checkbox-column">Select</th>
                                 <th>Tracking ID</th>
                                 <th>Subject</th>
-                                <th>Source</th>
-                                <th>Destination</th>
                                 <th>Current</th>
                                 <th>Status</th>
                                 <th>Priority</th>
@@ -146,17 +76,15 @@
                         <tbody>
                             {% for document in documents %}
                                 <tr>
-                                    {% if global_can_bulk_forward or global_can_bulk_close %}
-                                        <td class="bulk-checkbox-column">
-                                            <input
-                                                type="checkbox"
-                                                name="selected_document_ids"
-                                                value="{{ document.pk }}"
-                                                class="form-check-input"
-                                                data-document-checkbox
-                                            >
-                                        </td>
-                                    {% endif %}
+                                    <td class="bulk-checkbox-column">
+                                        <input
+                                            type="checkbox"
+                                            name="selected_document_ids"
+                                            value="{{ document.pk }}"
+                                            class="form-check-input"
+                                            data-document-checkbox
+                                        >
+                                    </td>
 
                                     <td>
                                         <a href="{% url 'document_detail' document.pk %}" class="table-link">
@@ -168,16 +96,6 @@
                                         <strong>{{ document.subject|default:"Subject not mentioned" }}</strong>
                                         {% if document.document_type %}
                                             <span class="small-muted">{{ document.document_type }}</span>
-                                        {% endif %}
-                                    </td>
-
-                                    <td>{{ document.source_display }}</td>
-
-                                    <td>
-                                        {% if document.destination_department %}
-                                            {{ document.destination_department }}
-                                        {% else %}
-                                            -
                                         {% endif %}
                                     </td>
 
@@ -203,13 +121,7 @@
                                         {% endif %}
                                     </td>
 
-                                    <td>
-                                        {% if document.aging_days >= 7 %}
-                                            <span class="report-number danger">{{ document.aging_days }}</span>
-                                        {% else %}
-                                            {{ document.aging_days }} days
-                                        {% endif %}
-                                    </td>
+                                    <td>{{ document.aging_days }} days</td>
 
                                     <td>
                                         {{ document.created_at|date:"d M Y" }}
@@ -224,18 +136,16 @@
                         {% for document in documents %}
                             <article class="document-mobile-card">
                                 <div class="mobile-card-topline">
-                                    {% if global_can_bulk_forward or global_can_bulk_close %}
-                                        <label class="mobile-card-select">
-                                            <input
-                                                type="checkbox"
-                                                name="selected_document_ids"
-                                                value="{{ document.pk }}"
-                                                class="form-check-input"
-                                                data-document-checkbox
-                                            >
-                                            <span>Select</span>
-                                        </label>
-                                    {% endif %}
+                                    <label class="mobile-card-select">
+                                        <input
+                                            type="checkbox"
+                                            name="selected_document_ids"
+                                            value="{{ document.pk }}"
+                                            class="form-check-input"
+                                            data-document-checkbox
+                                        >
+                                        <span>Select</span>
+                                    </label>
 
                                     <a href="{% url 'document_detail' document.pk %}" class="table-link">
                                         {{ document.tracking_id }}
@@ -255,7 +165,6 @@
 
                                 <div class="mobile-card-meta">
                                     <div><span>Type</span><strong>{{ document.get_entry_type_display }}</strong></div>
-                                    <div><span>Source</span><strong>{{ document.source_display }}</strong></div>
                                     <div>
                                         <span>Current</span>
                                         <strong>{% if document.current_department %}{{ document.current_department }}{% else %}-{% endif %}</strong>
@@ -286,7 +195,7 @@
                 </form>
             {% else %}
                 <div class="empty-state">
-                    No pending documents found.
+                    No assigned open documents found.
                 </div>
             {% endif %}
         </div>

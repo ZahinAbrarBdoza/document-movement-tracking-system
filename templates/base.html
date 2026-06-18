@@ -10,8 +10,21 @@
     <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
+    <header class="mobile-nav">
+        <div class="mobile-nav-brand">
+            <span class="mobile-logo-mark">PM</span>
+            <span>Padakhep</span>
+        </div>
+        <button type="button" class="mobile-menu-toggle" data-mobile-menu-toggle aria-label="Open navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </header>
+    <div class="sidebar-backdrop" data-sidebar-backdrop></div>
+
     <div class="app-shell">
-        <aside class="sidebar">
+        <aside class="sidebar" id="site-sidebar">
             <div class="sidebar-brand">
                 <div class="logo-mark">PM</div>
                 <div>
@@ -21,22 +34,33 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>
+                {% with current_url=request.resolver_match.url_name %}
+                <a href="{% url 'dashboard' %}" class="nav-link{% if current_url == 'dashboard' %} active{% endif %}">Dashboard</a>
 
                 {% if global_can_edit %}
-                    <a href="{% url 'document_create' %}" class="nav-link">New Document</a>
+                    <a href="{% url 'document_create' %}" class="nav-link{% if current_url == 'document_create' %} active{% endif %}">New Document</a>
                 {% endif %}
 
-                    <a href="{% url 'document_list' %}" class="nav-link">All Documents</a>
-                    <a href="{% url 'pending_documents' %}" class="nav-link">Pending Documents</a>
+                    {% if global_can_view_system_documents %}
+                        <a href="{% url 'document_list' %}" class="nav-link{% if current_url == 'document_list' or current_url == 'document_detail' or current_url == 'document_edit' or current_url == 'document_update_movement' %} active{% endif %}">All Documents</a>
+                        <a href="{% url 'pending_documents' %}" class="nav-link{% if current_url == 'pending_documents' or current_url == 'bulk_forward_documents' %} active{% endif %}">Pending Documents</a>
+                        <a href="{% url 'forwarded_documents' %}" class="nav-link{% if current_url == 'forwarded_documents' %} active{% endif %}">Forwarded Documents</a>
+                    {% endif %}
+
+                {% if global_my_assigned_count %}
+                    <a href="{% url 'my_assigned_documents' %}" class="nav-link{% if current_url == 'my_assigned_documents' or current_url == 'bulk_close_documents' or not global_can_view_system_documents and current_url == 'document_detail' or not global_can_view_system_documents and current_url == 'document_update_movement' %} active{% endif %}">
+                        My Assigned ({{ global_my_assigned_count }})
+                    </a>
+                {% endif %}
 
                 {% if global_can_view_reports %}
-                    <a href="{% url 'reports_dashboard' %}" class="nav-link">Reports</a>
+                    <a href="{% url 'reports_dashboard' %}" class="nav-link{% if current_url == 'reports_dashboard' or current_url == 'export_documents_excel' %} active{% endif %}">Reports</a>
                 {% endif %}
 
                 {% if request.user.is_superuser %}
-                    <a href="/admin/" class="nav-link">Admin Panel</a>
+                    <a href="/admin/" class="nav-link{% if request.path|slice:':7' == '/admin/' %} active{% endif %}">Admin Panel</a>
                 {% endif %}
+                {% endwith %}
             </nav>
         </aside>
 
@@ -62,9 +86,52 @@
             </header>
 
             <section class="content">
+                {% if messages %}
+                    <div class="message-stack">
+                        {% for message in messages %}
+                            <div class="message message-{{ message.tags }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
                 {% block content %}{% endblock %}
             </section>
         </main>
     </div>
+    {% block scripts %}{% endblock %}
+    <script>
+        (function () {
+            var body = document.body;
+            var toggle = document.querySelector('[data-mobile-menu-toggle]');
+            var backdrop = document.querySelector('[data-sidebar-backdrop]');
+            var sidebar = document.getElementById('site-sidebar');
+
+            if (!toggle || !backdrop || !sidebar) {
+                return;
+            }
+
+            function setMenuOpen(isOpen) {
+                body.classList.toggle('sidebar-open', isOpen);
+                toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                toggle.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+            }
+
+            toggle.addEventListener('click', function () {
+                setMenuOpen(!body.classList.contains('sidebar-open'));
+            });
+
+            backdrop.addEventListener('click', function () {
+                setMenuOpen(false);
+            });
+
+            sidebar.querySelectorAll('.nav-link').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    setMenuOpen(false);
+                });
+            });
+        }());
+    </script>
 </body>
 </html>

@@ -17,7 +17,7 @@
         <div class="detail-card">
             <div class="detail-header">
                 <span class="tracking">{{ document.tracking_id }}</span>
-                <h2>{{ document.subject }}</h2>
+                <h2>{{ document.subject|default:"Subject not mentioned" }}</h2>
                 <p>
                     Created by
                     {% if document.created_by %}
@@ -48,10 +48,10 @@
                     </div>
 
                     <div class="info-item">
-                        <span>Source Zone</span>
+                        <span>Reference No</span>
                         <strong>
-                            {% if document.source_zone %}
-                                {{ document.source_zone }}
+                            {% if document.reference_no %}
+                                {{ document.reference_no }}
                             {% else %}
                                 -
                             {% endif %}
@@ -59,15 +59,151 @@
                     </div>
 
                     <div class="info-item">
-                        <span>Source Department</span>
+                        <span>Addressed To Name</span>
                         <strong>
-                            {% if document.source_department %}
-                                {{ document.source_department }}
+                            {% if document.addressed_to_name %}
+                                {{ document.addressed_to_name }}
                             {% else %}
                                 -
                             {% endif %}
                         </strong>
                     </div>
+
+                    <div class="info-item">
+                        <span>Addressed To Designation</span>
+                        <strong>
+                            {% if document.addressed_to_designation %}
+                                {{ document.addressed_to_designation }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Designated Person</span>
+                        <strong>
+                            {% if document.designated_person %}
+                                {{ document.designated_person.get_full_name|default:document.designated_person.username }}
+                                {% if document.designated_person.email %}
+                                    <span class="small-muted">{{ document.designated_person.email }}</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>First Boss</span>
+                        <strong>
+                            {% if document.first_boss %}
+                                {{ document.first_boss.get_full_name|default:document.first_boss.username }}
+                                {% if document.first_boss.email %}
+                                    <span class="small-muted">{{ document.first_boss.email }}</span>
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Source Type</span>
+                        <strong>{{ document.get_source_type_display }}</strong>
+                    </div>
+
+                    {% if document.source_type == 'external' %}
+                        <div class="info-item">
+                            <span>Organization Type</span>
+                            <strong>
+                                {% if document.external_organization_type %}
+                                    {{ document.get_external_organization_type_display }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        {% if document.external_organization_type == 'bank' or document.external_organization_type == 'other' %}
+                            <div class="info-item">
+                                <span>Organization Name</span>
+                                <strong>
+                                    {% if document.external_organization_name %}
+                                        {{ document.external_organization_name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </strong>
+                            </div>
+
+                            <div class="info-item">
+                                <span>Branch</span>
+                                <strong>
+                                    {% if document.external_branch_name %}
+                                        {{ document.external_branch_name }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="info-item">
+                            <span>Division</span>
+                            <strong>
+                                {% if document.source_division %}
+                                    {{ document.source_division }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>Region</span>
+                            <strong>
+                                {% if document.source_region %}
+                                    {{ document.source_region }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>Area</span>
+                            <strong>
+                                {% if document.source_area %}
+                                    {{ document.source_area }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>Branch</span>
+                            <strong>
+                                {% if document.source_branch %}
+                                    {{ document.source_branch }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>Source Department</span>
+                            <strong>
+                                {% if document.source_department %}
+                                    {{ document.source_department }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+                    {% endif %}
 
                     <div class="info-item">
                         <span>Destination Department</span>
@@ -81,7 +217,7 @@
                     </div>
 
                     <div class="info-item">
-                        <span>Current Department</span>
+                        <span>Receiving Department</span>
                         <strong>
                             {% if document.current_department %}
                                 {{ document.current_department }}
@@ -112,6 +248,99 @@
                             {% endif %}
                         </strong>
                     </div>
+
+                    {% if document.entry_type == 'outward' or document.outward_amount or document.outward_amount == 0 %}
+                        <div class="info-item full">
+                            <span>Courier / Dispatch Cost Information</span>
+                            <strong>Dispatch/courier cost details</strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>বিস্তৃত বিবরণ</span>
+                            <strong>
+                                {% if document.outward_description %}
+                                    {{ document.outward_description }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>পরিমাণ</span>
+                            <strong>
+                                {% if document.outward_quantity %}
+                                    {{ document.outward_quantity }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>টাকার পরিমাণ</span>
+                            <strong>
+                                {% if document.outward_amount or document.outward_amount == 0 %}
+                                    {{ document.outward_amount|floatformat:2 }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+
+                        <div class="info-item">
+                            <span>Rate Source</span>
+                            <strong>
+                                {% if document.outward_is_manual %}
+                                    Manual / Other
+                                {% elif document.courier_rate %}
+                                    Predefined Rate
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </strong>
+                        </div>
+                    {% endif %}
+
+                    <div class="info-item">
+                        <span>Notification Required</span>
+                        <strong>
+                            {% if document.notification_required %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Notification Sent</span>
+                        <strong>
+                            {% if document.notification_sent %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <span>Notification Sent At</span>
+                        <strong>
+                            {% if document.notification_sent_at %}
+                                {{ document.notification_sent_at|date:"d M Y, h:i A" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    {% if document.notification_error %}
+                        <div class="info-item full">
+                            <span>Notification Error</span>
+                            <strong class="remarks-box">{{ document.notification_error }}</strong>
+                        </div>
+                    {% endif %}
 
                     <div class="info-item full">
                         <span>Remarks / মন্তব্য</span>
@@ -169,10 +398,17 @@
                 </div>
 
                 <div class="detail-actions">
-                    {% if can_edit %}
+                    {% if can_update_status %}
                         <a href="{% url 'document_update_movement' document.pk %}" class="small-action">
-                            Status Update / Forward
+                            {% if can_edit %}
+                                Status Update / Forward
+                            {% else %}
+                                Close Assigned File
+                            {% endif %}
                         </a>
+                    {% endif %}
+
+                    {% if can_edit %}
                         <a href="{% url 'document_edit' document.pk %}" class="small-action">
                             Edit Document
                         </a>

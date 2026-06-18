@@ -6,8 +6,20 @@
 {% block content %}
     <section class="page-actions">
         <div>
-            <h2>Update / Forward Document</h2>
-            <p>ডকুমেন্টের বর্তমান অবস্থা পরিবর্তন করুন অথবা অন্য বিভাগে ফরওয়ার্ড করুন।</p>
+            <h2>
+                {% if is_editor_update %}
+                    Update / Forward Document
+                {% else %}
+                    Close Assigned File
+                {% endif %}
+            </h2>
+            <p>
+                {% if is_editor_update %}
+                    Update the current document status or forward it to another department.
+                {% else %}
+                    This document is assigned to you. You can close it after your action is complete.
+                {% endif %}
+            </p>
         </div>
 
         <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Back to Details</a>
@@ -16,9 +28,9 @@
     <section class="detail-card" style="margin-bottom: 22px;">
         <div class="detail-header">
             <span class="tracking">{{ document.tracking_id }}</span>
-            <h2>{{ document.subject }}</h2>
+            <h2>{{ document.subject|default:"Subject not mentioned" }}</h2>
             <p>
-                Current Department:
+                Receiving Department:
                 {% if document.current_department %}
                     {{ document.current_department }}
                 {% else %}
@@ -34,18 +46,25 @@
         <section class="form-section">
             <h3>Movement Information</h3>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.action.id_for_label }}">{{ form.action.label }}</label>
-                    {{ form.action }}
-                    <div class="form-help">
-                        Select what happened: Forwarded, Received, Status Updated, Closed, Returned, etc.
-                    </div>
-                    {% for error in form.action.errors %}
-                        <div class="form-error">{{ error }}</div>
+            {% if is_editor_update %}
+                <div class="notice-box">
+                    If New Status is Forwarded, email notification will be sent automatically to the Designated Person. If First Boss is selected, they will be CC'd.
+                </div>
+            {% else %}
+                <div class="notice-box">
+                    Your available action is limited to closing this assigned document.
+                </div>
+            {% endif %}
+
+            {% if form.non_field_errors %}
+                <div class="error-box">
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
                     {% endfor %}
                 </div>
+            {% endif %}
 
+            <div class="form-grid">
                 <div class="form-group">
                     <label for="{{ form.new_status.id_for_label }}">{{ form.new_status.label }}</label>
                     {{ form.new_status }}
@@ -57,16 +76,18 @@
                     {% endfor %}
                 </div>
 
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="{{ form.to_department.id_for_label }}">{{ form.to_department.label }}</label>
-                    {{ form.to_department }}
-                    <div class="form-help">
-                        If forwarding, select the department where the physical document is going.
+                {% if is_editor_update %}
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="{{ form.to_department.id_for_label }}">{{ form.to_department.label }}</label>
+                        {{ form.to_department }}
+                        <div class="form-help">
+                            If forwarding, select the department where the physical document is going.
+                        </div>
+                        {% for error in form.to_department.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
                     </div>
-                    {% for error in form.to_department.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                {% endif %}
 
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label for="{{ form.remarks.id_for_label }}">{{ form.remarks.label }}</label>
@@ -83,7 +104,13 @@
 
         <div class="form-footer">
             <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Cancel</a>
-            <button type="submit" class="btn-save">Save Update</button>
+            <button type="submit" class="btn-save">
+                {% if is_editor_update %}
+                    Confirm Forward / Save Update
+                {% else %}
+                    Close File
+                {% endif %}
+            </button>
         </div>
     </form>
 {% endblock %}

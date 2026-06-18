@@ -1,3 +1,6 @@
+from .models import Document
+
+
 def user_role_flags(request):
     user = request.user
 
@@ -5,17 +8,45 @@ def user_role_flags(request):
         return {
             'global_can_edit': False,
             'global_can_view_reports': False,
+            'global_can_bulk_forward': False,
+            'global_can_bulk_close': False,
+            'global_can_view_system_documents': False,
+            'global_my_assigned_count': 0,
         }
+
+    assigned_count = Document.objects.filter(
+        designated_person=user,
+    ).exclude(status='closed').count()
 
     if user.is_superuser:
         return {
             'global_can_edit': True,
             'global_can_view_reports': True,
+            'global_can_bulk_forward': True,
+            'global_can_bulk_close': True,
+            'global_can_view_system_documents': True,
+            'global_my_assigned_count': assigned_count,
         }
 
-    groups = user.groups.values_list('name', flat=True)
+    groups = set(user.groups.values_list('name', flat=True))
+    can_view_system_documents = bool(groups.intersection({
+        'Admin',
+        'Receiving Desk',
+        'HR',
+        'ADT',
+        'OPS',
+        'Management',
+    }))
+    can_bulk_close = (
+        bool(groups.intersection({'Admin', 'Receiving Desk'})) or
+        'Management' not in groups
+    )
 
     return {
-        'global_can_edit': any(group in groups for group in ['Admin', 'HR', 'ADT', 'OPS']),
-        'global_can_view_reports': any(group in groups for group in ['Admin', 'HR', 'ADT', 'OPS', 'Management']),
+        'global_can_edit': bool(groups.intersection({'Admin', 'Receiving Desk', 'HR', 'ADT', 'OPS'})),
+        'global_can_view_reports': bool(groups.intersection({'Admin', 'HR', 'ADT', 'OPS', 'Management'})),
+        'global_can_bulk_forward': bool(groups.intersection({'Admin', 'Receiving Desk'})),
+        'global_can_bulk_close': can_bulk_close,
+        'global_can_view_system_documents': can_view_system_documents,
+        'global_my_assigned_count': assigned_count,
     }

@@ -7,7 +7,7 @@
     <section class="page-actions">
         <div>
             <h2>All Documents</h2>
-            <p>ডকুমেন্ট ট্র্যাকিং আইডি, বিষয়, জোন, বিভাগ বা মন্তব্য দিয়ে খুঁজুন।</p>
+            <p>Search by tracking ID, subject, division, region, area, branch, or remarks.</p>
         </div>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -25,14 +25,14 @@
         <form method="get">
             <div class="filter-grid">
                 <div class="form-group">
-                    <label for="q">Search / অনুসন্ধান</label>
+                    <label for="q">Search</label>
                     <input
                         type="text"
                         name="q"
                         id="q"
                         class="form-control"
                         value="{{ query }}"
-                        placeholder="Tracking ID, বিষয়, জোন, বিভাগ, মন্তব্য..."
+                        placeholder="Tracking ID, subject, division, region, area, branch, remarks..."
                     >
                 </div>
 
@@ -85,17 +85,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="zone">Zone</label>
-                    <select name="zone" id="zone" class="form-control">
-                        <option value="">All</option>
-                        {% for zone in zones %}
-                            <option value="{{ zone.id }}" {% if selected_zone == zone.id|stringformat:"s" %}selected{% endif %}>
-                                {{ zone.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
                     <label for="date_from">From Date</label>
                     <input
                         type="date"
@@ -133,90 +122,188 @@
 
         <div class="table-wrap">
             {% if documents %}
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Tracking ID</th>
-                            <th>Subject / বিষয়</th>
-                            <th>Type</th>
-                            <th>Source</th>
-                            <th>Destination</th>
-                            <th>Current</th>
-                            <th>Status</th>
-                            <th>Priority</th>
-                            <th>Aging</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
+                <form method="post" class="bulk-action-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
 
-                    <tbody>
-                        {% for document in documents %}
+                    {% if global_can_bulk_forward or global_can_bulk_close %}
+                        <div class="bulk-action-bar">
+                            <label class="checkbox-label bulk-select-all">
+                                <input type="checkbox" class="form-check-input" data-select-all-documents>
+                                <span>Select all visible</span>
+                            </label>
+
+                            <div class="bulk-action-buttons">
+                                {% if global_can_bulk_forward %}
+                                    <button type="submit" formaction="{% url 'bulk_forward_documents' %}" class="btn-secondary">
+                                        Forward Selected
+                                    </button>
+                                {% endif %}
+
+                                {% if global_can_bulk_close %}
+                                    <button type="submit" formaction="{% url 'bulk_close_documents' %}" class="btn-secondary">
+                                        Close Selected
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <table class="data-table desktop-table">
+                        <thead>
                             <tr>
-                                <td>
+                                {% if global_can_bulk_forward or global_can_bulk_close %}
+                                    <th class="bulk-checkbox-column">Select</th>
+                                {% endif %}
+                                <th>Tracking ID</th>
+                                <th>Subject</th>
+                                <th>Type</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Current</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Aging</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for document in documents %}
+                                <tr>
+                                    {% if global_can_bulk_forward or global_can_bulk_close %}
+                                        <td class="bulk-checkbox-column">
+                                            <input
+                                                type="checkbox"
+                                                name="selected_document_ids"
+                                                value="{{ document.pk }}"
+                                                class="form-check-input"
+                                                data-document-checkbox
+                                            >
+                                        </td>
+                                    {% endif %}
+
+                                    <td>
+                                        <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                            {{ document.tracking_id }}
+                                        </a>
+                                    </td>
+
+                                    <td class="subject-cell">
+                                        <strong>{{ document.subject|default:"Subject not mentioned" }}</strong>
+                                        {% if document.document_type %}
+                                            <span class="small-muted">{{ document.document_type }}</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ document.get_entry_type_display }}</td>
+                                    <td>{{ document.source_display }}</td>
+
+                                    <td>
+                                        {% if document.destination_department %}
+                                            {{ document.destination_department }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if document.current_department %}
+                                            {{ document.current_department }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <span class="status-{{ document.status }}">
+                                            {{ document.get_status_display }}
+                                        </span>
+                                    </td>
+
+                                    <td>
+                                        {% if document.priority == 'urgent' %}
+                                            <span class="badge urgent">Urgent</span>
+                                        {% else %}
+                                            <span class="badge">Normal</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>{{ document.aging_days }} days</td>
+
+                                    <td>
+                                        {{ document.created_at|date:"d M Y" }}
+                                        <span class="small-muted">{{ document.created_at|time:"h:i A" }}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="mobile-card-list">
+                        {% for document in documents %}
+                            <article class="document-mobile-card">
+                                <div class="mobile-card-topline">
+                                    {% if global_can_bulk_forward or global_can_bulk_close %}
+                                        <label class="mobile-card-select">
+                                            <input
+                                                type="checkbox"
+                                                name="selected_document_ids"
+                                                value="{{ document.pk }}"
+                                                class="form-check-input"
+                                                data-document-checkbox
+                                            >
+                                            <span>Select</span>
+                                        </label>
+                                    {% endif %}
+
                                     <a href="{% url 'document_detail' document.pk %}" class="table-link">
                                         {{ document.tracking_id }}
                                     </a>
-                                </td>
+                                </div>
 
-                                <td class="subject-cell">
-                                    <strong>{{ document.subject }}</strong>
-                                    {% if document.document_type %}
-                                        <span class="small-muted">{{ document.document_type }}</span>
-                                    {% endif %}
-                                </td>
+                                <h4>{{ document.subject|default:"Subject not mentioned" }}</h4>
 
-                                <td>{{ document.get_entry_type_display }}</td>
-
-                                <td>
-                                    {% if document.source_zone %}
-                                        {{ document.source_zone }}
-                                    {% elif document.source_department %}
-                                        {{ document.source_department }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-
-                                <td>
-                                    {% if document.destination_department %}
-                                        {{ document.destination_department }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-
-                                <td>
-                                    {% if document.current_department %}
-                                        {{ document.current_department }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-
-                                <td>
-                                    <span class="status-{{ document.status }}">
-                                        {{ document.get_status_display }}
-                                    </span>
-                                </td>
-
-                                <td>
+                                <div class="mobile-card-badges">
+                                    <span class="status-{{ document.status }}">{{ document.get_status_display }}</span>
                                     {% if document.priority == 'urgent' %}
                                         <span class="badge urgent">Urgent</span>
                                     {% else %}
                                         <span class="badge">Normal</span>
                                     {% endif %}
-                                </td>
+                                </div>
 
-                                <td>{{ document.aging_days }} days</td>
+                                <div class="mobile-card-meta">
+                                    <div><span>Type</span><strong>{{ document.get_entry_type_display }}</strong></div>
+                                    <div><span>Source</span><strong>{{ document.source_display }}</strong></div>
+                                    <div>
+                                        <span>Current</span>
+                                        <strong>{% if document.current_department %}{{ document.current_department }}{% else %}-{% endif %}</strong>
+                                    </div>
+                                    <div>
+                                        <span>Assigned</span>
+                                        <strong>{% if document.designated_person %}{{ document.designated_person.get_full_name|default:document.designated_person.username }}{% else %}-{% endif %}</strong>
+                                    </div>
+                                    <div>
+                                        <span>Date</span>
+                                        <strong>
+                                            {% if document.received_date %}
+                                                Received {{ document.received_date|date:"d M Y" }}
+                                            {% elif document.sent_date %}
+                                                Sent {{ document.sent_date|date:"d M Y" }}
+                                            {% else %}
+                                                {{ document.created_at|date:"d M Y" }}
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                    <div><span>Aging</span><strong>{{ document.aging_days }} days</strong></div>
+                                </div>
 
-                                <td>
-                                    {{ document.created_at|date:"d M Y" }}
-                                    <span class="small-muted">{{ document.created_at|time:"h:i A" }}</span>
-                                </td>
-                            </tr>
+                                <a href="{% url 'document_detail' document.pk %}" class="mobile-card-action">View</a>
+                            </article>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                </form>
             {% else %}
                 <div class="empty-state">
                     No documents found. Try a different search or filter.
@@ -224,4 +311,23 @@
             {% endif %}
         </div>
     </section>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        (function () {
+            document.querySelectorAll('[data-select-all-documents]').forEach(function (selectAll) {
+                var form = selectAll.closest('form');
+                if (!form) {
+                    return;
+                }
+
+                selectAll.addEventListener('change', function () {
+                    form.querySelectorAll('[data-document-checkbox]').forEach(function (checkbox) {
+                        checkbox.checked = selectAll.checked;
+                    });
+                });
+            });
+        }());
+    </script>
 {% endblock %}

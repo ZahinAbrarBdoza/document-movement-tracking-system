@@ -7,8 +7,7 @@
     <section class="wave-banner">
         <h2>ডকুমেন্ট মুভমেন্ট ড্যাশবোর্ড</h2>
         <p>
-            HR, ADT, OPS এবং Zone অফিসের মধ্যে অফিসিয়াল চিঠি ও ডকুমেন্টের
-            বর্তমান অবস্থা, পেন্ডিং কাজ এবং সাম্প্রতিক মুভমেন্ট এক জায়গায় দেখুন।
+            অফিসসমূহের চিঠি ও ডকুমেন্টের বর্তমান অবস্থা, পেন্ডিং কাজ এবং সাম্প্রতিক মুভমেন্ট এক জায়গায় দেখুন।
         </p>
         <div class="dashboard-actions">
             {% if can_edit %}
@@ -17,54 +16,97 @@
                 </a>
             {% endif %}
 
-            <a href="{% url 'pending_documents' %}" class="dashboard-action">
-                View Pending
-            </a>
+            {% if can_view_system_dashboard %}
+                <a href="{% url 'pending_documents' %}" class="dashboard-action">
+                    View Pending
+                </a>
+            {% endif %}
 
-            <a href="{% url 'reports_dashboard' %}" class="dashboard-action">
-                Reports
-            </a>
+            {% if can_view_reports %}
+                <a href="{% url 'reports_dashboard' %}" class="dashboard-action">
+                    Reports
+                </a>
 
-            <a href="{% url 'export_documents_excel' %}" class="dashboard-action">
-                Export Excel
-            </a>
+                <a href="{% url 'export_documents_excel' %}" class="dashboard-action">
+                    Export Excel
+                </a>
+            {% endif %}
+
+            {% if not can_view_system_dashboard %}
+                <a href="{% url 'my_assigned_documents' %}" class="dashboard-action">
+                    My Assigned
+                </a>
+            {% endif %}
         </div>
     </section>
 
     <section class="stats-grid">
-        <a href="{% url 'document_list' %}" class="stat-card stat-link">
-            <span>Total Documents</span>
+        <a href="{% if can_view_system_dashboard %}{% url 'document_list' %}{% else %}{% url 'my_assigned_documents' %}{% endif %}" class="stat-card stat-link">
+            <span>
+                {% if can_view_system_dashboard %}
+                    Total Documents
+                {% else %}
+                    Total Assigned to Me
+                {% endif %}
+            </span>
             <strong>{{ total_documents }}</strong>
+            {% if not can_view_system_dashboard %}
+                <span class="small-muted">Assigned to me</span>
+            {% endif %}
         </a>
 
-        <a href="{% url 'pending_documents' %}" class="stat-card stat-link">
-            <span>Pending Documents</span>
-            <strong>{{ pending_documents }}</strong>
-        </a>
+        {% if can_view_system_dashboard %}
+            <a href="{% url 'pending_documents' %}" class="stat-card stat-link">
+                <span>Pending Documents</span>
+                <strong>{{ pending_documents }}</strong>
+            </a>
 
-        <a href="{% url 'document_list' %}?status=closed" class="stat-card stat-link">
-            <span>Closed Documents</span>
-            <strong>{{ closed_documents }}</strong>
-        </a>
-
-        <a href="{% url 'pending_documents' %}?priority=urgent" class="stat-card stat-link">
-            <span>Urgent Pending</span>
-            <strong>{{ urgent_documents }}</strong>
-        </a>
-        {% if user_department %}
-            <a href="{% url 'pending_documents' %}?department={{ user_department.id }}" class="stat-card stat-link">
-                <span>My Department Pending</span>
-                <strong>{{ my_department_pending }}</strong>
-                <span class="small-muted">{{ user_department.name }}</span>
+            <a href="{% url 'forwarded_documents' %}" class="stat-card stat-link">
+                <span>Forwarded Documents</span>
+                <strong>{{ forwarded_documents }}</strong>
             </a>
         {% endif %}
+
+        <a href="{% if can_view_system_dashboard %}{% url 'document_list' %}?status=closed{% else %}{% url 'document_list' %}?status=closed{% endif %}" class="stat-card stat-link">
+            <span>
+                {% if can_view_system_dashboard %}
+                    Closed Documents
+                {% else %}
+                    Closed by Me
+                {% endif %}
+            </span>
+            <strong>{{ closed_documents }}</strong>
+            {% if not can_view_system_dashboard %}
+                <span class="small-muted">Assigned to me</span>
+            {% endif %}
+        </a>
+
+        <a href="{% if can_view_system_dashboard %}{% url 'pending_documents' %}?priority=urgent{% else %}{% url 'document_list' %}?priority=urgent{% endif %}" class="stat-card stat-link">
+            <span>
+                {% if can_view_system_dashboard %}
+                    Urgent Pending
+                {% else %}
+                    Urgent Assigned
+                {% endif %}
+            </span>
+            <strong>{{ urgent_pending }}</strong>
+            {% if not can_view_system_dashboard %}
+                <span class="small-muted">Assigned and open</span>
+            {% endif %}
+        </a>
+
+        <a href="{% url 'my_assigned_documents' %}" class="stat-card stat-link">
+            <span>My Assigned Documents</span>
+            <strong>{{ my_assigned_documents_count }}</strong>
+            <span class="small-muted">Open documents assigned to me</span>
+        </a>
     </section>
 
     
 
     <section class="card">
         <div class="card-header">
-            <h3>Recent Documents</h3>
+            <h3>{{ dashboard_table_title }}</h3>
         </div>
 
         <div class="table-wrap">
@@ -89,15 +131,9 @@
                                         {{ document.tracking_id }}
                                     </a>
                                 </td>
-                                <td>{{ document.subject }}</td>
+                                <td>{{ document.subject|default:"Subject not mentioned" }}</td>
                                 <td>
-                                    {% if document.source_zone %}
-                                        {{ document.source_zone }}
-                                    {% elif document.source_department %}
-                                        {{ document.source_department }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
+                                    {{ document.source_display }}
                                 </td>
                                 <td>
                                     {% if document.destination_department %}

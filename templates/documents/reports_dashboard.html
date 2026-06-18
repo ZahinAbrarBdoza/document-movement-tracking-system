@@ -7,7 +7,7 @@
     <section class="page-actions">
         <div>
             <h2>Reports Dashboard</h2>
-            <p>পেন্ডিং, ক্লোজড, জোনভিত্তিক, বিভাগভিত্তিক এবং এজিং রিপোর্ট দেখুন।</p>
+            <p>Document status, hierarchy, aging, notification, and outwarding cost reports.</p>
         </div>
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -17,42 +17,91 @@
     </section>
 
     <section class="wave-banner">
-        <h2>ডকুমেন্ট রিপোর্ট সামারি</h2>
+        <h2>Document Report Summary</h2>
         <p>
-            এই ড্যাশবোর্ডের মাধ্যমে কোন বিভাগে কত ডকুমেন্ট পেন্ডিং আছে,
-            কোন জোন থেকে কত ডকুমেন্ট এসেছে এবং কোন ডকুমেন্টগুলো বেশি দিন ধরে পেন্ডিং আছে তা দেখা যাবে।
+            Track open workload, forwarded documents, hierarchy volume, aging documents, notifications, and dispatch costs.
         </p>
     </section>
 
-    <section class="kpi-grid-six">
-        <div class="kpi-card">
-            <span>Total Documents</span>
-            <strong>{{ total_documents }}</strong>
+    <section class="kpi-group-grid">
+        <div class="kpi-group">
+            <h3>Status Overview</h3>
+            <div class="kpi-grid-six">
+                <div class="kpi-card">
+                    <span>Total Documents</span>
+                    <strong>{{ total_documents }}</strong>
+                </div>
+
+                <div class="kpi-card pending">
+                    <span>Pending Documents</span>
+                    <strong>{{ pending_documents }}</strong>
+                </div>
+
+                <div class="kpi-card pending">
+                    <span>Forwarded Documents</span>
+                    <strong>{{ forwarded_documents }}</strong>
+                </div>
+
+                <div class="kpi-card closed">
+                    <span>Closed Documents</span>
+                    <strong>{{ closed_documents }}</strong>
+                </div>
+
+                <div class="kpi-card urgent">
+                    <span>Urgent Open</span>
+                    <strong>{{ urgent_open }}</strong>
+                </div>
+            </div>
         </div>
 
-        <div class="kpi-card pending">
-            <span>Pending Documents</span>
-            <strong>{{ pending_documents }}</strong>
+        <div class="kpi-group">
+            <h3>Today's Activity</h3>
+            <div class="kpi-grid-six">
+                <div class="kpi-card">
+                    <span>Received Today</span>
+                    <strong>{{ received_today }}</strong>
+                </div>
+
+                <div class="kpi-card pending">
+                    <span>Forwarded Today</span>
+                    <strong>{{ forwarded_today }}</strong>
+                </div>
+
+                <div class="kpi-card closed">
+                    <span>Closed Today</span>
+                    <strong>{{ closed_today }}</strong>
+                </div>
+            </div>
         </div>
 
-        <div class="kpi-card closed">
-            <span>Closed Documents</span>
-            <strong>{{ closed_documents }}</strong>
+        <div class="kpi-group">
+            <h3>Outwarding Cost</h3>
+            <div class="kpi-grid-six">
+                <div class="kpi-card">
+                    <span>Total Outwarding</span>
+                    <strong>{{ total_outwarding_documents }}</strong>
+                </div>
+
+                <div class="kpi-card closed">
+                    <span>Total Dispatch Cost</span>
+                    <strong>{{ total_dispatch_cost|floatformat:2 }}</strong>
+                </div>
+            </div>
         </div>
 
-        <div class="kpi-card urgent">
-            <span>Urgent Pending</span>
-            <strong>{{ urgent_pending }}</strong>
-        </div>
+        <div class="kpi-group">
+            <h3>Notifications</h3>
+            <div class="kpi-grid-six">
+                <div class="kpi-card closed">
+                    <span>Notifications Sent</span>
+                    <strong>{{ notifications_sent }}</strong>
+                </div>
 
-        <div class="kpi-card">
-            <span>Received Today</span>
-            <strong>{{ received_today }}</strong>
-        </div>
-
-        <div class="kpi-card">
-            <span>Sent Today</span>
-            <strong>{{ sent_today }}</strong>
+                <div class="kpi-card urgent">
+                    <span>Notifications Failed</span>
+                    <strong>{{ notifications_failed }}</strong>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -67,7 +116,7 @@
                     <div class="report-row">
                         <div>
                             <span class="label">{{ department.name }}</span>
-                            <span class="sub-label">Current pending documents</span>
+                            <span class="sub-label">Not forwarded and not closed</span>
                         </div>
 
                         {% if department.pending_count > 0 %}
@@ -84,21 +133,48 @@
 
         <div class="card">
             <div class="card-header">
-                <h3>Zone-wise Documents</h3>
+                <h3>Department-wise Forwarded</h3>
             </div>
 
             <div class="report-list">
-                {% for zone in zone_documents %}
+                {% for department in department_forwarded %}
                     <div class="report-row">
                         <div>
-                            <span class="label">{{ zone.name }}</span>
-                            <span class="sub-label">Documents received from this zone</span>
+                            <span class="label">{{ department.name }}</span>
+                            <span class="sub-label">Currently forwarded documents</span>
                         </div>
 
-                        <span class="report-number">{{ zone.document_count }}</span>
+                        {% if department.forwarded_count > 0 %}
+                            <span class="report-number warning">{{ department.forwarded_count }}</span>
+                        {% else %}
+                            <span class="report-number success">{{ department.forwarded_count }}</span>
+                        {% endif %}
                     </div>
                 {% empty %}
-                    <div class="empty-state">No zone data found.</div>
+                    <div class="empty-state">No department data found.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="report-grid">
+        <div class="card">
+            <div class="card-header">
+                <h3>Division-wise Documents</h3>
+            </div>
+
+            <div class="report-list">
+                {% for division in division_documents %}
+                    <div class="report-row">
+                        <div>
+                            <span class="label">{{ division.name }}</span>
+                            <span class="sub-label">Documents by source division</span>
+                        </div>
+
+                        <span class="report-number">{{ division.document_count }}</span>
+                    </div>
+                {% empty %}
+                    <div class="empty-state">No division data found.</div>
                 {% endfor %}
             </div>
         </div>
@@ -107,17 +183,17 @@
     <section class="report-grid">
         <div class="card">
             <div class="card-header report-table-title">
-                <h3>Aging Pending Documents</h3>
-                <span class="result-count">Oldest 10 pending</span>
+                <h3>Aging Open Documents</h3>
+                <span class="result-count">Oldest 10 open</span>
             </div>
 
             <div class="table-wrap">
                 {% if aging_documents %}
-                    <table class="data-table">
+                    <table class="data-table report-data-table">
                         <thead>
                             <tr>
                                 <th>Tracking ID</th>
-                                <th>Subject / বিষয়</th>
+                                <th>Subject</th>
                                 <th>Current</th>
                                 <th>Status</th>
                                 <th>Aging</th>
@@ -133,7 +209,7 @@
                                         </a>
                                     </td>
 
-                                    <td class="subject-cell">{{ document.subject }}</td>
+                                    <td class="subject-cell">{{ document.subject|default:"Subject not mentioned" }}</td>
 
                                     <td>
                                         {% if document.current_department %}
@@ -161,7 +237,7 @@
                         </tbody>
                     </table>
                 {% else %}
-                    <div class="empty-state">No pending documents found.</div>
+                    <div class="empty-state">No open documents found.</div>
                 {% endif %}
             </div>
         </div>
@@ -174,11 +250,11 @@
 
             <div class="table-wrap">
                 {% if recent_closed_documents %}
-                    <table class="data-table">
+                    <table class="data-table report-data-table">
                         <thead>
                             <tr>
                                 <th>Tracking ID</th>
-                                <th>Subject / বিষয়</th>
+                                <th>Subject</th>
                                 <th>Current</th>
                                 <th>Closed</th>
                             </tr>
@@ -193,7 +269,7 @@
                                         </a>
                                     </td>
 
-                                    <td class="subject-cell">{{ document.subject }}</td>
+                                    <td class="subject-cell">{{ document.subject|default:"Subject not mentioned" }}</td>
 
                                     <td>
                                         {% if document.current_department %}
@@ -222,47 +298,149 @@
     </section>
 
     <section class="report-grid">
-    <div class="card">
-        <div class="card-header">
-            <h3>Status Summary</h3>
-        </div>
+        <div class="card">
+            <div class="card-header">
+                <h3>Status Summary</h3>
+            </div>
 
-        <div class="report-list">
-            {% for item in status_summary %}
-                <div class="report-row">
-                    <div>
-                        <span class="label">{{ item.label }}</span>
-                        <span class="sub-label">Documents in this status</span>
+            <div class="report-list">
+                {% for item in status_summary %}
+                    <div class="report-row">
+                        <div>
+                            <span class="label">{{ item.label }}</span>
+                            <span class="sub-label">Documents in this status</span>
+                        </div>
+
+                        <span class="report-number">{{ item.count }}</span>
                     </div>
-
-                    <span class="report-number">{{ item.count }}</span>
-                </div>
-            {% empty %}
-                <div class="empty-state">No status data found.</div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <div class="card">
-        <div class="card-header">
-            <h3>Entry Type Summary</h3>
+                {% empty %}
+                    <div class="empty-state">No status data found.</div>
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="report-list">
-            {% for item in entry_type_summary %}
-                <div class="report-row">
-                    <div>
-                        <span class="label">{{ item.label }}</span>
-                        <span class="sub-label">Inward / Outward document count</span>
+        <div class="card">
+            <div class="card-header">
+                <h3>Entry Type Summary</h3>
+            </div>
+
+            <div class="report-list">
+                {% for item in entry_type_summary %}
+                    <div class="report-row">
+                        <div>
+                            <span class="label">{{ item.label }}</span>
+                            <span class="sub-label">Inward / Outward document count</span>
+                        </div>
+
+                        <span class="report-number">{{ item.count }}</span>
                     </div>
-
-                    <span class="report-number">{{ item.count }}</span>
-                </div>
-            {% empty %}
-                <div class="empty-state">No entry type data found.</div>
-            {% endfor %}
+                {% empty %}
+                    <div class="empty-state">No entry type data found.</div>
+                {% endfor %}
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+
+    <section class="card" style="margin-top: 22px;">
+        <div class="card-header report-table-title">
+            <h3>Recent Outwarding Costs</h3>
+            <span class="result-count">Latest 10 with cost</span>
+        </div>
+
+        <div class="table-wrap">
+            {% if recent_outwarding_cost_documents %}
+                <table class="data-table report-data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Subject</th>
+                            <th>Cost</th>
+                            <th>Rate Source</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for document in recent_outwarding_cost_documents %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                        {{ document.tracking_id }}
+                                    </a>
+                                </td>
+                                <td class="subject-cell">
+                                    {{ document.subject|default:"Subject not mentioned" }}
+                                    {% if document.outward_description %}
+                                        <span class="small-muted">{{ document.outward_description }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ document.outward_amount|floatformat:2 }}</td>
+                                <td>
+                                    {% if document.outward_is_manual %}
+                                        Manual / Other
+                                    {% elif document.courier_rate %}
+                                        Predefined Rate
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">No outwarding cost records found.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="card" style="margin-top: 22px;">
+        <div class="card-header report-table-title">
+            <h3>Failed Notifications</h3>
+            <span class="result-count">Latest 10</span>
+        </div>
+
+        <div class="table-wrap">
+            {% if failed_notification_documents %}
+                <table class="data-table report-data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Subject</th>
+                            <th>Designated Person</th>
+                            <th>Error</th>
+                            <th>Updated</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for document in failed_notification_documents %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                        {{ document.tracking_id }}
+                                    </a>
+                                </td>
+                                <td class="subject-cell">{{ document.subject|default:"Subject not mentioned" }}</td>
+                                <td>
+                                    {% if document.designated_person %}
+                                        {{ document.designated_person.username }}
+                                        {% if document.designated_person.email %}
+                                            <span class="small-muted">{{ document.designated_person.email }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ document.notification_error }}</td>
+                                <td>{{ document.updated_at|date:"d M Y, h:i A" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">No failed notifications found.</div>
+            {% endif %}
+        </div>
+    </section>
 
 {% endblock %}

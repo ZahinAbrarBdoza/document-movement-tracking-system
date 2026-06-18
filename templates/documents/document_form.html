@@ -25,19 +25,27 @@
                     নতুন চিঠি বা ডকুমেন্টের তথ্য যুক্ত করুন।
                 {% endif %}
             </p>
-            <div class="required-note">Fields marked by system validation are required before saving.</div>
+            <div class="required-note"><span class="required-marker">*</span> Required before saving.</div>
         </div>
     </section>
 
     <form method="post" enctype="multipart/form-data" class="form-layout">
         {% csrf_token %}
 
+        {% if form.non_field_errors %}
+            <div class="error-box">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
         <section class="form-section">
             <h3>1. Basic Information</h3>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="{{ form.entry_type.id_for_label }}">{{ form.entry_type.label }}</label>
+                    <label for="{{ form.entry_type.id_for_label }}">{{ form.entry_type.label }} <span class="required-marker">*</span></label>
                     {{ form.entry_type }}
                     {% for error in form.entry_type.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -47,7 +55,7 @@
                 <div class="form-group">
                     <label for="{{ form.document_type.id_for_label }}">{{ form.document_type.label }}</label>
                     {{ form.document_type }}
-                    <div class="form-help">Example: Letter, Memo, Application, Report, Complaint</div>
+                    <div class="form-help">Select the matching document category.</div>
                     {% for error in form.document_type.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
@@ -56,14 +64,14 @@
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
                     {{ form.subject }}
-                    <div class="form-help">Bangla and English both are supported. Example: কর্মী বদলি সংক্রান্ত আবেদন</div>
+                    <div class="form-help">Optional. Bangla and English both are supported.</div>
                     {% for error in form.subject.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
 
                 <div class="form-group">
-                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }}</label>
+                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }} <span class="required-marker">*</span></label>
                     {{ form.priority }}
                     {% for error in form.priority.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -71,9 +79,9 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }} <span class="required-marker">*</span></label>
                     {{ form.status }}
-                    <div class="form-help">For new received physical documents, use “Physical Document Received”.</div>
+                    <div class="form-help">For new received physical documents, use "Physical Document Received".</div>
                     {% for error in form.status.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
@@ -82,23 +90,143 @@
         </section>
 
         <section class="form-section">
-            <h3>2. Source & Destination</h3>
+            <h3>2. Recipient & Notification Information</h3>
+
+            <div class="form-help" style="margin-bottom: 18px;">
+                Select Designated Person if a person is named. First Boss receives a copy when forwarded.
+            </div>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="{{ form.source_zone.id_for_label }}">{{ form.source_zone.label }}</label>
-                    {{ form.source_zone }}
-                    <div class="form-help">Use this if the document came from a zone.</div>
-                    {% for error in form.source_zone.errors %}
+                    <label for="{{ form.reference_no.id_for_label }}">{{ form.reference_no.label }}</label>
+                    {{ form.reference_no }}
+                    {% for error in form.reference_no.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
 
                 <div class="form-group">
+                    <label for="{{ form.addressed_to_name.id_for_label }}">{{ form.addressed_to_name.label }}</label>
+                    {{ form.addressed_to_name }}
+                    {% for error in form.addressed_to_name.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.addressed_to_designation.id_for_label }}">{{ form.addressed_to_designation.label }}</label>
+                    {{ form.addressed_to_designation }}
+                    {% for error in form.addressed_to_designation.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.designated_person.id_for_label }}">{{ form.designated_person.label }}</label>
+                    {{ form.designated_person }}
+                    {% for error in form.designated_person.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.first_boss.id_for_label }}">{{ form.first_boss.label }}</label>
+                    {{ form.first_boss }}
+                    {% for error in form.first_boss.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label" for="{{ form.notification_required.id_for_label }}">
+                        {{ form.notification_required }}
+                        <span>{{ form.notification_required.label }}</span>
+                    </label>
+                    <div class="form-help">Uncheck only when the document is addressed by department/designation and no email notification should be sent.</div>
+                    {% for error in form.notification_required.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <h3>3. Source & Destination</h3>
+
+            <div class="form-help" style="margin-bottom: 18px;">
+                Select Division first. Region, Area and Branch will narrow down automatically.
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.source_type.id_for_label }}">{{ form.source_type.label }}</label>
+                    {{ form.source_type }}
+                    {% for error in form.source_type.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-internal-field">
+                    <label for="{{ form.source_division.id_for_label }}">{{ form.source_division.label }}</label>
+                    {{ form.source_division }}
+                    {% for error in form.source_division.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-internal-field">
+                    <label for="{{ form.source_region.id_for_label }}">{{ form.source_region.label }}</label>
+                    {{ form.source_region }}
+                    {% for error in form.source_region.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-internal-field">
+                    <label for="{{ form.source_area.id_for_label }}">{{ form.source_area.label }}</label>
+                    {{ form.source_area }}
+                    {% for error in form.source_area.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-internal-field">
+                    <label for="{{ form.source_branch.id_for_label }}">{{ form.source_branch.label }}</label>
+                    {{ form.source_branch }}
+                    {% for error in form.source_branch.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-internal-field">
                     <label for="{{ form.source_department.id_for_label }}">{{ form.source_department.label }}</label>
                     {{ form.source_department }}
                     <div class="form-help">Use this if the document came from HR, ADT, OPS, etc.</div>
                     {% for error in form.source_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-external-field">
+                    <label for="{{ form.external_organization_type.id_for_label }}">{{ form.external_organization_type.label }} <span class="required-marker">*</span></label>
+                    {{ form.external_organization_type }}
+                    {% for error in form.external_organization_type.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-external-detail-field">
+                    <label for="{{ form.external_organization_name.id_for_label }}">{{ form.external_organization_name.label }} <span class="required-marker">*</span></label>
+                    {{ form.external_organization_name }}
+                    {% for error in form.external_organization_name.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group source-external-detail-field">
+                    <label for="{{ form.external_branch_name.id_for_label }}">{{ form.external_branch_name.label }} <span class="required-marker">*</span></label>
+                    {{ form.external_branch_name }}
+                    {% for error in form.external_branch_name.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
@@ -114,7 +242,7 @@
                 <div class="form-group">
                     <label for="{{ form.current_department.id_for_label }}">{{ form.current_department.label }}</label>
                     {{ form.current_department }}
-                    <div class="form-help">Where the physical document is currently located.</div>
+                    <div class="form-help">Department receiving or holding the physical document.</div>
                     {% for error in form.current_department.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
@@ -123,19 +251,19 @@
         </section>
 
         <section class="form-section">
-            <h3>3. Dates & Physical Copy</h3>
+            <h3>4. Dates & Physical Copy</h3>
 
             <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }}</label>
+                <div class="form-group" id="received-date-field">
+                    <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }} <span class="required-marker">*</span></label>
                     {{ form.received_date }}
                     {% for error in form.received_date.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.sent_date.id_for_label }}">{{ form.sent_date.label }}</label>
+                <div class="form-group" id="sent-date-field">
+                    <label for="{{ form.sent_date.id_for_label }}">{{ form.sent_date.label }} <span class="required-marker">*</span></label>
                     {{ form.sent_date }}
                     {% for error in form.sent_date.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -144,8 +272,56 @@
             </div>
         </section>
 
+        <section class="form-section" id="courier-dispatch-section" hidden>
+            <h3>5. Courier / Dispatch Cost Information</h3>
+
+            <div class="form-grid">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="{{ form.courier_rate.id_for_label }}">{{ form.courier_rate.label }}</label>
+                    {{ form.courier_rate }}
+                    {% for error in form.courier_rate.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.outward_description.id_for_label }}">{{ form.outward_description.label }}</label>
+                    {{ form.outward_description }}
+                    {% for error in form.outward_description.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.outward_quantity.id_for_label }}">{{ form.outward_quantity.label }}</label>
+                    {{ form.outward_quantity }}
+                    {% for error in form.outward_quantity.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.outward_amount.id_for_label }}">{{ form.outward_amount.label }}</label>
+                    {{ form.outward_amount }}
+                    {% for error in form.outward_amount.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label" for="{{ form.outward_is_manual.id_for_label }}">
+                        {{ form.outward_is_manual }}
+                        <span>{{ form.outward_is_manual.label }}</span>
+                    </label>
+                    {% for error in form.outward_is_manual.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
         <section class="form-section">
-            <h3>4. Remarks & Attachment</h3>
+            <h3>6. Remarks & Attachment</h3>
 
             <div class="form-grid single">
                 <div class="form-group">
@@ -178,4 +354,489 @@
             </button>
         </div>
     </form>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        (function () {
+            function optionLabel(select) {
+                var option = select.options[select.selectedIndex];
+                return option && option.value ? option.text : '';
+            }
+
+            function setupSearchableSelect(select) {
+                if (select.dataset.searchableReady === 'true') {
+                    return;
+                }
+
+                select.dataset.searchableReady = 'true';
+
+                var options = Array.prototype.slice.call(select.options).map(function (option) {
+                    return {
+                        value: option.value,
+                        label: option.text,
+                        disabled: option.disabled
+                    };
+                });
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'searchable-select';
+
+                var control = document.createElement('div');
+                control.className = 'searchable-select-control';
+
+                var input = document.createElement('input');
+                input.type = 'text';
+                input.id = select.id + '_search';
+                input.className = 'searchable-select-input';
+                input.placeholder = select.dataset.searchPlaceholder || 'Search';
+                input.autocomplete = 'off';
+                input.value = optionLabel(select);
+                input.setAttribute('role', 'combobox');
+                input.setAttribute('aria-autocomplete', 'list');
+                input.setAttribute('aria-expanded', 'false');
+                input.setAttribute('aria-controls', select.id + '_search_options');
+
+                var toggle = document.createElement('button');
+                toggle.type = 'button';
+                toggle.className = 'searchable-select-toggle';
+                toggle.setAttribute('aria-label', 'Show document type options');
+
+                var menu = document.createElement('div');
+                menu.id = select.id + '_search_options';
+                menu.className = 'searchable-select-menu';
+                menu.setAttribute('role', 'listbox');
+
+                control.appendChild(input);
+                control.appendChild(toggle);
+                wrapper.appendChild(control);
+                wrapper.appendChild(menu);
+                select.insertAdjacentElement('beforebegin', wrapper);
+                select.classList.add('searchable-select-native');
+                select.hidden = true;
+                select.setAttribute('aria-hidden', 'true');
+                select.tabIndex = -1;
+                select.style.display = 'none';
+
+                var label = document.querySelector('label[for="' + select.id + '"]');
+                if (label) {
+                    label.setAttribute('for', input.id);
+                }
+
+                var activeIndex = 0;
+                var visibleOptions = [];
+
+                function exactMatch(value) {
+                    var normalized = value.trim().toLowerCase();
+                    return options.find(function (option) {
+                        return !option.disabled && option.label.toLowerCase() === normalized;
+                    });
+                }
+
+                function syncExactValue() {
+                    var match = exactMatch(input.value);
+                    if (match) {
+                        select.value = match.value;
+                        return;
+                    }
+
+                    if (input.value.trim() === '') {
+                        select.value = '';
+                    }
+                }
+
+                function render(queryOverride) {
+                    var queryValue = typeof queryOverride === 'string' ? queryOverride : input.value;
+                    var query = queryValue.trim().toLowerCase();
+                    visibleOptions = options.filter(function (option) {
+                        if (option.disabled) {
+                            return false;
+                        }
+
+                        if (!query) {
+                            return true;
+                        }
+
+                        return option.label.toLowerCase().indexOf(query) !== -1 ||
+                            option.value.toLowerCase().indexOf(query) !== -1;
+                    });
+
+                    if (activeIndex >= visibleOptions.length) {
+                        activeIndex = visibleOptions.length ? visibleOptions.length - 1 : -1;
+                    }
+
+                    menu.innerHTML = '';
+
+                    if (!visibleOptions.length) {
+                        var empty = document.createElement('div');
+                        empty.className = 'searchable-select-empty';
+                        empty.textContent = 'No matching document types';
+                        menu.appendChild(empty);
+                        return;
+                    }
+
+                    visibleOptions.forEach(function (option, index) {
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'searchable-select-option';
+                        button.textContent = option.label;
+                        button.setAttribute('role', 'option');
+                        button.setAttribute('aria-selected', option.value === select.value ? 'true' : 'false');
+
+                        if (option.value === select.value) {
+                            button.classList.add('is-selected');
+                        }
+
+                        if (index === activeIndex) {
+                            button.classList.add('is-active');
+                        }
+
+                        button.addEventListener('mousedown', function (event) {
+                            event.preventDefault();
+                        });
+
+                        button.addEventListener('click', function () {
+                            choose(option);
+                        });
+
+                        menu.appendChild(button);
+                    });
+                }
+
+                function openMenu(queryOverride) {
+                    wrapper.classList.add('is-open');
+                    input.setAttribute('aria-expanded', 'true');
+                    render(queryOverride);
+                }
+
+                function closeMenu() {
+                    wrapper.classList.remove('is-open');
+                    input.setAttribute('aria-expanded', 'false');
+                }
+
+                function choose(option) {
+                    select.value = option.value;
+                    input.value = option.value ? option.label : '';
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeMenu();
+                }
+
+                input.addEventListener('focus', function () {
+                    input.select();
+                    activeIndex = Math.max(0, options.findIndex(function (option) {
+                        return option.value === select.value;
+                    }));
+                    openMenu('');
+                });
+
+                input.addEventListener('input', function () {
+                    activeIndex = 0;
+                    syncExactValue();
+                    openMenu();
+                });
+
+                input.addEventListener('keydown', function (event) {
+                    if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        openMenu();
+                        activeIndex = Math.min(activeIndex + 1, visibleOptions.length - 1);
+                        render();
+                    }
+
+                    if (event.key === 'ArrowUp') {
+                        event.preventDefault();
+                        openMenu();
+                        activeIndex = Math.max(activeIndex - 1, 0);
+                        render();
+                    }
+
+                    if (event.key === 'Enter' && wrapper.classList.contains('is-open')) {
+                        event.preventDefault();
+                        if (visibleOptions[activeIndex]) {
+                            choose(visibleOptions[activeIndex]);
+                        }
+                    }
+
+                    if (event.key === 'Escape') {
+                        input.value = optionLabel(select);
+                        closeMenu();
+                    }
+                });
+
+                input.addEventListener('blur', function () {
+                    window.setTimeout(function () {
+                        if (!wrapper.contains(document.activeElement)) {
+                            var match = exactMatch(input.value);
+                            if (match) {
+                                choose(match);
+                                return;
+                            }
+
+                            input.value = optionLabel(select);
+                            closeMenu();
+                        }
+                    }, 120);
+                });
+
+                toggle.addEventListener('click', function () {
+                    input.focus();
+                    activeIndex = 0;
+                    openMenu('');
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrapper.contains(event.target)) {
+                        input.value = optionLabel(select);
+                        closeMenu();
+                    }
+                });
+            }
+
+            document.querySelectorAll('select[data-searchable-select="true"]').forEach(setupSearchableSelect);
+        }());
+    </script>
+
+    <script>
+        (function () {
+            var sourceTypeSelect = document.getElementById('{{ form.source_type.id_for_label }}');
+            var organizationTypeSelect = document.getElementById('{{ form.external_organization_type.id_for_label }}');
+            var organizationNameInput = document.getElementById('{{ form.external_organization_name.id_for_label }}');
+            var externalBranchInput = document.getElementById('{{ form.external_branch_name.id_for_label }}');
+            var internalFields = document.querySelectorAll('.source-internal-field');
+            var externalFields = document.querySelectorAll('.source-external-field');
+            var externalDetailFields = document.querySelectorAll('.source-external-detail-field');
+
+            if (!sourceTypeSelect || !organizationTypeSelect || !organizationNameInput || !externalBranchInput) {
+                return;
+            }
+
+            function setHidden(fields, isHidden) {
+                fields.forEach(function (field) {
+                    field.hidden = isHidden;
+                });
+            }
+
+            function updateExternalDetails() {
+                var needsDetails = organizationTypeSelect.value === 'bank' || organizationTypeSelect.value === 'other';
+                setHidden(externalDetailFields, sourceTypeSelect.value !== 'external' || !needsDetails);
+                organizationNameInput.required = sourceTypeSelect.value === 'external' && needsDetails;
+                externalBranchInput.required = sourceTypeSelect.value === 'external' && needsDetails;
+            }
+
+            function updateSourceFields() {
+                var isExternal = sourceTypeSelect.value === 'external';
+                setHidden(internalFields, isExternal);
+                setHidden(externalFields, !isExternal);
+                organizationTypeSelect.required = isExternal;
+                updateExternalDetails();
+            }
+
+            sourceTypeSelect.addEventListener('change', updateSourceFields);
+            organizationTypeSelect.addEventListener('change', updateExternalDetails);
+            updateSourceFields();
+        }());
+    </script>
+
+    <script>
+        (function () {
+            var divisionSelect = document.getElementById('{{ form.source_division.id_for_label }}');
+            var regionSelect = document.getElementById('{{ form.source_region.id_for_label }}');
+            var areaSelect = document.getElementById('{{ form.source_area.id_for_label }}');
+            var branchSelect = document.getElementById('{{ form.source_branch.id_for_label }}');
+
+            if (!divisionSelect || !regionSelect || !areaSelect || !branchSelect) {
+                return;
+            }
+
+            function resetSelect(select) {
+                select.innerHTML = '<option value="">---------</option>';
+            }
+
+            function setLoading(select) {
+                select.innerHTML = '<option value="">Loading...</option>';
+            }
+
+            function fillSelect(select, items) {
+                resetSelect(select);
+                items.forEach(function (item) {
+                    var option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    select.appendChild(option);
+                });
+            }
+
+            function loadOptions(url, params, select) {
+                setLoading(select);
+                return fetch(url + '?' + new URLSearchParams(params), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Request failed');
+                        }
+                        return response.json();
+                    })
+                    .then(function (items) {
+                        fillSelect(select, items);
+                    })
+                    .catch(function () {
+                        resetSelect(select);
+                    });
+            }
+
+            divisionSelect.addEventListener('change', function () {
+                resetSelect(regionSelect);
+                resetSelect(areaSelect);
+                resetSelect(branchSelect);
+
+                if (divisionSelect.value) {
+                    loadOptions(
+                        '{% url "get_regions" %}',
+                        { division_id: divisionSelect.value },
+                        regionSelect
+                    );
+                }
+            });
+
+            regionSelect.addEventListener('change', function () {
+                resetSelect(areaSelect);
+                resetSelect(branchSelect);
+
+                if (regionSelect.value) {
+                    loadOptions(
+                        '{% url "get_areas" %}',
+                        { region_id: regionSelect.value },
+                        areaSelect
+                    );
+                }
+            });
+
+            areaSelect.addEventListener('change', function () {
+                resetSelect(branchSelect);
+
+                if (areaSelect.value) {
+                    loadOptions(
+                        '{% url "get_branches" %}',
+                        { area_id: areaSelect.value },
+                        branchSelect
+                    );
+                }
+            });
+        }());
+    </script>
+
+    <script>
+        (function () {
+            var entryTypeSelect = document.getElementById('{{ form.entry_type.id_for_label }}');
+            var receivedDateField = document.getElementById('received-date-field');
+            var sentDateField = document.getElementById('sent-date-field');
+            var receivedDateInput = document.getElementById('{{ form.received_date.id_for_label }}');
+            var sentDateInput = document.getElementById('{{ form.sent_date.id_for_label }}');
+            var courierSection = document.getElementById('courier-dispatch-section');
+            var courierRateSelect = document.getElementById('{{ form.courier_rate.id_for_label }}');
+            var descriptionInput = document.getElementById('{{ form.outward_description.id_for_label }}');
+            var quantityInput = document.getElementById('{{ form.outward_quantity.id_for_label }}');
+            var amountInput = document.getElementById('{{ form.outward_amount.id_for_label }}');
+            var manualCheckbox = document.getElementById('{{ form.outward_is_manual.id_for_label }}');
+
+            if (
+                !entryTypeSelect ||
+                !receivedDateField ||
+                !sentDateField ||
+                !receivedDateInput ||
+                !sentDateInput ||
+                !courierSection ||
+                !courierRateSelect ||
+                !descriptionInput ||
+                !quantityInput ||
+                !amountInput ||
+                !manualCheckbox
+            ) {
+                return;
+            }
+
+            function isOutwarding() {
+                return entryTypeSelect.value === 'outward';
+            }
+
+            function setManualMode(clearValues) {
+                var isManual = manualCheckbox.checked;
+                descriptionInput.readOnly = !isManual;
+                quantityInput.readOnly = !isManual;
+
+                if (isManual) {
+                    courierRateSelect.value = '';
+
+                    if (clearValues) {
+                        descriptionInput.value = '';
+                        quantityInput.value = '';
+                        amountInput.value = '';
+                    }
+                }
+            }
+
+            function updateCourierVisibility() {
+                courierSection.hidden = !isOutwarding();
+                setManualMode(false);
+            }
+
+            function updateDateVisibility() {
+                var isInward = entryTypeSelect.value === 'inward';
+                var isOutward = entryTypeSelect.value === 'outward';
+
+                receivedDateField.hidden = !isInward;
+                sentDateField.hidden = !isOutward;
+                receivedDateInput.required = isInward;
+                sentDateInput.required = isOutward;
+            }
+
+            function updateEntryTypeFields() {
+                updateDateVisibility();
+                updateCourierVisibility();
+            }
+
+            function fillRateFields(data) {
+                descriptionInput.value = data.description || '';
+                quantityInput.value = data.quantity || '';
+                amountInput.value = data.amount || '';
+            }
+
+            courierRateSelect.addEventListener('change', function () {
+                if (!courierRateSelect.value) {
+                    return;
+                }
+
+                manualCheckbox.checked = false;
+                setManualMode(false);
+
+                fetch(
+                    '{% url "get_courier_rate" %}?' +
+                    new URLSearchParams({ courier_rate_id: courierRateSelect.value }),
+                    {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                )
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Courier rate was not found.');
+                        }
+                        return response.json();
+                    })
+                    .then(fillRateFields)
+                    .catch(function () {});
+            });
+
+            manualCheckbox.addEventListener('change', function () {
+                setManualMode(manualCheckbox.checked);
+            });
+
+            entryTypeSelect.addEventListener('change', updateEntryTypeFields);
+            updateEntryTypeFields();
+        }());
+    </script>
 {% endblock %}

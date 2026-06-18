@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} | Padakhep Document Tracker{% endblock %}
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>{{ page_title }}</h2>
+            <p>This action will update each selected document individually and create separate movement history records.</p>
+        </div>
+
+        <a href="{{ next_url }}" class="btn-secondary">Cancel</a>
+    </section>
+
+    <form method="post" action="{% url bulk_url_name %}" class="form-layout">
+        {% csrf_token %}
+        <input type="hidden" name="confirm" value="1">
+        <input type="hidden" name="next" value="{{ next_url }}">
+        <input type="hidden" name="skipped_count" value="{{ skipped_count }}">
+        {% for document_id in selected_document_ids %}
+            <input type="hidden" name="selected_document_ids" value="{{ document_id }}">
+        {% endfor %}
+
+        <section class="form-section">
+            <h3>Selected Documents: {{ documents|length }}</h3>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Tracking ID</th>
+                            <th>Subject</th>
+                            <th>Designated Person</th>
+                            <th>Current Department</th>
+                            <th>Current Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for document in documents %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'document_detail' document.pk %}" class="table-link">
+                                        {{ document.tracking_id }}
+                                    </a>
+                                </td>
+                                <td class="subject-cell">{{ document.subject|default:"Subject not mentioned" }}</td>
+                                <td>
+                                    {% if document.designated_person %}
+                                        {{ document.designated_person.get_full_name|default:document.designated_person.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if document.current_department %}
+                                        {{ document.current_department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-{{ document.status }}">
+                                        {{ document.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {% if skipped_items %}
+            <section class="form-section">
+                <h3>Skipped Documents: {{ skipped_items|length }}</h3>
+                <div class="report-list">
+                    {% for item in skipped_items %}
+                        <div class="report-row">
+                            <div>
+                                {% if item.document %}
+                                    <span class="label">{{ item.document.tracking_id }}</span>
+                                    <span class="sub-label">{{ item.document.subject|default:"Subject not mentioned" }}</span>
+                                {% else %}
+                                    <span class="label">Unknown document</span>
+                                {% endif %}
+                            </div>
+                            <span class="badge">{{ item.reason }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        <section class="form-section">
+            <h3>{{ remarks_label }}</h3>
+
+            <div class="form-group">
+                <label for="remarks">
+                    {{ remarks_label }}{% if remarks_required %} *{% endif %}
+                </label>
+                <textarea
+                    name="remarks"
+                    id="remarks"
+                    class="form-control"
+                    rows="4"
+                    {% if remarks_required %}required{% endif %}
+                >{{ remarks_default }}</textarea>
+                {% if remarks_error %}
+                    <div class="form-error">{{ remarks_error }}</div>
+                {% endif %}
+            </div>
+        </section>
+
+        <div class="form-footer">
+            <a href="{{ next_url }}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-save">
+                {% if action == 'forward' %}
+                    Confirm Forward
+                {% else %}
+                    Confirm Close
+                {% endif %}
+            </button>
+        </div>
+    </form>
+{% endblock %}
