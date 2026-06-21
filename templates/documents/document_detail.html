@@ -109,7 +109,7 @@
                     </div>
 
                     <div class="info-item">
-                        <span>Source Type</span>
+                        <span>{% if document.entry_type == 'outward' %}Destination Type{% else %}Source Type{% endif %}</span>
                         <strong>{{ document.get_source_type_display }}</strong>
                     </div>
 
@@ -150,7 +150,7 @@
                         {% endif %}
                     {% else %}
                         <div class="info-item">
-                            <span>Division</span>
+                            <span>{% if document.entry_type == 'outward' %}Destination Division{% else %}Source Division{% endif %}</span>
                             <strong>
                                 {% if document.source_division %}
                                     {{ document.source_division }}
@@ -161,7 +161,7 @@
                         </div>
 
                         <div class="info-item">
-                            <span>Region</span>
+                            <span>{% if document.entry_type == 'outward' %}Destination Region{% else %}Source Region{% endif %}</span>
                             <strong>
                                 {% if document.source_region %}
                                     {{ document.source_region }}
@@ -172,7 +172,7 @@
                         </div>
 
                         <div class="info-item">
-                            <span>Area</span>
+                            <span>{% if document.entry_type == 'outward' %}Destination Area{% else %}Source Area{% endif %}</span>
                             <strong>
                                 {% if document.source_area %}
                                     {{ document.source_area }}
@@ -183,7 +183,7 @@
                         </div>
 
                         <div class="info-item">
-                            <span>Branch</span>
+                            <span>{% if document.entry_type == 'outward' %}Destination Branch{% else %}Source Branch{% endif %}</span>
                             <strong>
                                 {% if document.source_branch %}
                                     {{ document.source_branch }}
@@ -194,7 +194,7 @@
                         </div>
 
                         <div class="info-item">
-                            <span>Source Department</span>
+                            <span>{% if document.entry_type == 'outward' %}Destination Department{% else %}Internal Source Department{% endif %}</span>
                             <strong>
                                 {% if document.source_department %}
                                     {{ document.source_department }}
@@ -206,7 +206,7 @@
                     {% endif %}
 
                     <div class="info-item">
-                        <span>Destination Department</span>
+                        <span>{% if document.entry_type == 'outward' %}Internal Sending Department{% else %}Destination Department{% endif %}</span>
                         <strong>
                             {% if document.destination_department %}
                                 {{ document.destination_department }}
@@ -217,7 +217,7 @@
                     </div>
 
                     <div class="info-item">
-                        <span>Receiving Department</span>
+                        <span>{% if document.entry_type == 'outward' %}Current / Sending Department{% else %}Current / Receiving Department{% endif %}</span>
                         <strong>
                             {% if document.current_department %}
                                 {{ document.current_department }}

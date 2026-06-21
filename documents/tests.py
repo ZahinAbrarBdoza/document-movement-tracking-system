@@ -402,6 +402,91 @@ class HeadOfficeNotificationWorkflowTests(TestCase):
             'true',
         )
 
+    def test_user_info_api_returns_basic_staff_information(self):
+        UserProfile.objects.create(
+            user=self.designated_person,
+            department=self.ops_department,
+            designation='Senior Officer',
+        )
+
+        self.client.login(username='polu', password='password')
+        response = self.client.get(
+            reverse('get_user_info'),
+            {'user_id': self.designated_person.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            json.loads(response.content),
+            {
+                'id': self.designated_person.pk,
+                'name': self.designated_person.username,
+                'designation': 'Senior Officer',
+                'department': self.ops_department.name,
+            },
+        )
+
+    def test_user_info_api_requires_login(self):
+        response = self.client.get(
+            reverse('get_user_info'),
+            {'user_id': self.designated_person.pk},
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+    def test_document_form_keeps_selected_current_department(self):
+        UserProfile.objects.create(
+            user=self.designated_person,
+            department=self.ops_department,
+            designation='Senior Officer',
+        )
+
+        form = DocumentForm(data={
+            'entry_type': 'inward',
+            'document_type': 'Memo',
+            'subject': 'Assigned memo',
+            'designated_person': self.designated_person.pk,
+            'destination_department': self.ops_department.pk,
+            'current_department': self.department.pk,
+            'received_date': '2026-06-17',
+            'priority': 'normal',
+            'status': 'physical_received',
+        })
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['current_department'], self.department)
+
+    def test_new_document_defaults_current_department_to_receiving_desk(self):
+        receiving_department = Department.objects.create(
+            name='Receiving Desk',
+            code='RECEIVING',
+        )
+
+        self.client.login(username='polu', password='password')
+        response = self.client.get(reverse('document_create'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context['form'].initial['current_department'],
+            receiving_department.pk,
+        )
+        self.assertEqual(
+            response.context['receiving_desk_department_id'],
+            receiving_department.pk,
+        )
+
+    def test_new_document_exposes_user_department_default_for_outward(self):
+        UserProfile.objects.create(
+            user=self.receiving_user,
+            department=self.ops_department,
+        )
+
+        self.client.login(username='polu', password='password')
+        response = self.client.get(reverse('document_create'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['user_department_id'], self.ops_department.pk)
+
     def test_document_form_status_dropdown_uses_limited_choices(self):
         form = DocumentForm()
 
@@ -421,7 +506,7 @@ class HeadOfficeNotificationWorkflowTests(TestCase):
         document_form = DocumentForm()
         movement_form = DocumentMovementForm()
 
-        self.assertEqual(document_form.fields['current_department'].label, 'Receiving Department')
+        self.assertEqual(document_form.fields['current_department'].label, 'Current / Receiving Department')
         self.assertEqual(movement_form.fields['to_department'].label, 'Forward / Receiving Department')
         self.assertNotIn('action', movement_form.fields)
 

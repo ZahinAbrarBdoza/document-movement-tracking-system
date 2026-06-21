@@ -182,13 +182,13 @@ class DocumentForm(forms.ModelForm):
             'external_organization_type': 'Organization Type',
             'external_organization_name': 'Organization Name',
             'external_branch_name': 'Branch',
-            'source_division': 'Division',
-            'source_region': 'Region',
-            'source_area': 'Area',
-            'source_branch': 'Branch',
-            'source_department': 'Source Department',
+            'source_division': 'Source Division',
+            'source_region': 'Source Region',
+            'source_area': 'Source Area',
+            'source_branch': 'Source Branch',
+            'source_department': 'Internal Source Department',
             'destination_department': 'Destination Department',
-            'current_department': 'Receiving Department',
+            'current_department': 'Current / Receiving Department',
             'received_date': 'Received Date',
             'sent_date': 'Sent Date',
             'courier_rate': 'বিস্তৃত বিবরণ - পরিমাণ',
@@ -330,12 +330,6 @@ class DocumentForm(forms.ModelForm):
             cleaned_data['outward_quantity'] = courier_rate.quantity
             if outward_amount is None:
                 cleaned_data['outward_amount'] = courier_rate.amount
-
-        designated_person = cleaned_data.get('designated_person')
-        if designated_person and hasattr(designated_person, 'profile'):
-            dept = designated_person.profile.department
-            if dept:
-                cleaned_data['current_department'] = dept
 
         return cleaned_data
 

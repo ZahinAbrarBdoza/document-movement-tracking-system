@@ -31,6 +31,13 @@
 
     <form method="post" enctype="multipart/form-data" class="form-layout">
         {% csrf_token %}
+        <div
+            id="document-form-entry-defaults"
+            data-is-edit="{% if is_edit %}1{% else %}0{% endif %}"
+            data-receiving-department-id="{{ receiving_desk_department_id|default:'' }}"
+            data-user-department-id="{{ user_department_id|default:'' }}"
+            hidden
+        ></div>
 
         {% if form.non_field_errors %}
             <div class="error-box">
@@ -151,15 +158,15 @@
         </section>
 
         <section class="form-section">
-            <h3>3. Source & Destination</h3>
+            <h3 id="source-destination-title">3. Source & Destination</h3>
 
-            <div class="form-help" style="margin-bottom: 18px;">
-                Select Division first. Region, Area and Branch will narrow down automatically.
+            <div class="form-help" id="source-destination-help" style="margin-bottom: 18px;">
+                Select where the document came from, if written on the document. Then select the internal destination department.
             </div>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="{{ form.source_type.id_for_label }}">{{ form.source_type.label }}</label>
+                    <label for="{{ form.source_type.id_for_label }}" data-entry-label data-inward-label="Source Type" data-outward-label="Destination Type">{{ form.source_type.label }}</label>
                     {{ form.source_type }}
                     {% for error in form.source_type.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -167,7 +174,7 @@
                 </div>
 
                 <div class="form-group source-internal-field">
-                    <label for="{{ form.source_division.id_for_label }}">{{ form.source_division.label }}</label>
+                    <label for="{{ form.source_division.id_for_label }}" data-entry-label data-inward-label="Source Division" data-outward-label="Destination Division">{{ form.source_division.label }}</label>
                     {{ form.source_division }}
                     {% for error in form.source_division.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -175,7 +182,7 @@
                 </div>
 
                 <div class="form-group source-internal-field">
-                    <label for="{{ form.source_region.id_for_label }}">{{ form.source_region.label }}</label>
+                    <label for="{{ form.source_region.id_for_label }}" data-entry-label data-inward-label="Source Region" data-outward-label="Destination Region">{{ form.source_region.label }}</label>
                     {{ form.source_region }}
                     {% for error in form.source_region.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -183,7 +190,7 @@
                 </div>
 
                 <div class="form-group source-internal-field">
-                    <label for="{{ form.source_area.id_for_label }}">{{ form.source_area.label }}</label>
+                    <label for="{{ form.source_area.id_for_label }}" data-entry-label data-inward-label="Source Area" data-outward-label="Destination Area">{{ form.source_area.label }}</label>
                     {{ form.source_area }}
                     {% for error in form.source_area.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -191,7 +198,7 @@
                 </div>
 
                 <div class="form-group source-internal-field">
-                    <label for="{{ form.source_branch.id_for_label }}">{{ form.source_branch.label }}</label>
+                    <label for="{{ form.source_branch.id_for_label }}" data-entry-label data-inward-label="Source Branch" data-outward-label="Destination Branch">{{ form.source_branch.label }}</label>
                     {{ form.source_branch }}
                     {% for error in form.source_branch.errors %}
                         <div class="form-error">{{ error }}</div>
@@ -199,9 +206,9 @@
                 </div>
 
                 <div class="form-group source-internal-field">
-                    <label for="{{ form.source_department.id_for_label }}">{{ form.source_department.label }}</label>
+                    <label for="{{ form.source_department.id_for_label }}" data-entry-label data-inward-label="Internal Source Department" data-outward-label="Destination Department">{{ form.source_department.label }}</label>
                     {{ form.source_department }}
-                    <div class="form-help">Use this if the document came from HR, ADT, OPS, etc.</div>
+                    <div class="form-help" id="source-department-help">Use this if the document came from HR, ADT, OPS, etc.</div>
                     {% for error in form.source_department.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
@@ -232,17 +239,18 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="{{ form.destination_department.id_for_label }}">{{ form.destination_department.label }}</label>
+                    <label for="{{ form.destination_department.id_for_label }}" data-entry-label data-inward-label="Destination Department" data-outward-label="Internal Sending Department">{{ form.destination_department.label }}</label>
                     {{ form.destination_department }}
+                    <div class="form-help" id="destination-department-help">Internal department where this document should go next.</div>
                     {% for error in form.destination_department.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
 
                 <div class="form-group">
-                    <label for="{{ form.current_department.id_for_label }}">{{ form.current_department.label }}</label>
+                    <label for="{{ form.current_department.id_for_label }}" data-entry-label data-inward-label="Current / Receiving Department" data-outward-label="Current / Sending Department">{{ form.current_department.label }}</label>
                     {{ form.current_department }}
-                    <div class="form-help">Department receiving or holding the physical document.</div>
+                    <div class="form-help" id="current-department-help">Department receiving or holding the physical document.</div>
                     {% for error in form.current_department.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
@@ -598,6 +606,75 @@
 
     <script>
         (function () {
+            var designatedPersonSelect = document.getElementById('{{ form.designated_person.id_for_label }}');
+            var designationInput = document.getElementById('{{ form.addressed_to_designation.id_for_label }}');
+            var autoFilledDesignation = false;
+            var designationManuallyEdited = designationInput && designationInput.value.trim() !== '';
+            var lastAutoFilledDesignation = '';
+
+            if (!designatedPersonSelect || !designationInput) {
+                return;
+            }
+
+            function setAutoDesignation(value) {
+                designationInput.value = value;
+                autoFilledDesignation = Boolean(value);
+                designationManuallyEdited = false;
+                lastAutoFilledDesignation = value;
+            }
+
+            designationInput.addEventListener('input', function () {
+                if (autoFilledDesignation && designationInput.value === lastAutoFilledDesignation) {
+                    return;
+                }
+
+                autoFilledDesignation = false;
+                designationManuallyEdited = true;
+            });
+
+            designatedPersonSelect.addEventListener('change', function () {
+                var userId = designatedPersonSelect.value;
+
+                if (!userId) {
+                    if (autoFilledDesignation && !designationManuallyEdited) {
+                        setAutoDesignation('');
+                    }
+                    return;
+                }
+
+                fetch(
+                    '{% url "get_user_info" %}?' +
+                    new URLSearchParams({ user_id: userId }),
+                    {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }
+                )
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('User information was not found.');
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        var designation = data.designation || '';
+                        var canUpdate = designationInput.value.trim() === '' ||
+                            (autoFilledDesignation && !designationManuallyEdited);
+
+                        if (designation && canUpdate) {
+                            setAutoDesignation(designation);
+                        } else if (!designation && autoFilledDesignation && !designationManuallyEdited) {
+                            setAutoDesignation('');
+                        }
+                    })
+                    .catch(function () {});
+            });
+        }());
+    </script>
+
+    <script>
+        (function () {
             var sourceTypeSelect = document.getElementById('{{ form.source_type.id_for_label }}');
             var organizationTypeSelect = document.getElementById('{{ form.external_organization_type.id_for_label }}');
             var organizationNameInput = document.getElementById('{{ form.external_organization_name.id_for_label }}');
@@ -634,6 +711,98 @@
             sourceTypeSelect.addEventListener('change', updateSourceFields);
             organizationTypeSelect.addEventListener('change', updateExternalDetails);
             updateSourceFields();
+        }());
+    </script>
+
+    <script>
+        (function () {
+            var entryTypeSelect = document.getElementById('{{ form.entry_type.id_for_label }}');
+            var currentDepartmentSelect = document.getElementById('{{ form.current_department.id_for_label }}');
+            var defaultsElement = document.getElementById('document-form-entry-defaults');
+            var sourceTitle = document.getElementById('source-destination-title');
+            var sourceHelp = document.getElementById('source-destination-help');
+            var sourceDepartmentHelp = document.getElementById('source-department-help');
+            var destinationDepartmentHelp = document.getElementById('destination-department-help');
+            var currentDepartmentHelp = document.getElementById('current-department-help');
+            var entryLabels = document.querySelectorAll('[data-entry-label]');
+
+            if (!entryTypeSelect) {
+                return;
+            }
+
+            var isEdit = defaultsElement && defaultsElement.dataset.isEdit === '1';
+            var receivingDepartmentId = defaultsElement ? defaultsElement.dataset.receivingDepartmentId : '';
+            var userDepartmentId = defaultsElement ? defaultsElement.dataset.userDepartmentId : '';
+            var autoDepartmentValue = currentDepartmentSelect ? currentDepartmentSelect.value : '';
+            var departmentManuallyChanged = false;
+
+            function updateEntryLabels(isOutward) {
+                entryLabels.forEach(function (label) {
+                    label.textContent = isOutward ? label.dataset.outwardLabel : label.dataset.inwardLabel;
+                });
+            }
+
+            function applyCurrentDepartmentDefault(isOutward) {
+                if (isEdit || !currentDepartmentSelect || departmentManuallyChanged) {
+                    return;
+                }
+
+                var targetValue = isOutward ? userDepartmentId : receivingDepartmentId;
+                if (!targetValue) {
+                    return;
+                }
+
+                if (!currentDepartmentSelect.value || currentDepartmentSelect.value === autoDepartmentValue) {
+                    currentDepartmentSelect.value = targetValue;
+                    autoDepartmentValue = targetValue;
+                }
+            }
+
+            function updateEntryWording() {
+                var isOutward = entryTypeSelect.value === 'outward';
+
+                if (sourceTitle) {
+                    sourceTitle.textContent = isOutward ? '3. Destination & Sending Information' : '3. Source & Destination';
+                }
+
+                if (sourceHelp) {
+                    sourceHelp.textContent = isOutward ?
+                        'Select where the document will be sent. Then select the internal sending department.' :
+                        'Select where the document came from, if written on the document. Then select the internal destination department.';
+                }
+
+                if (sourceDepartmentHelp) {
+                    sourceDepartmentHelp.textContent = isOutward ?
+                        'Use this when the destination is an internal department.' :
+                        'Use this if the document came from HR, ADT, OPS, etc.';
+                }
+
+                if (destinationDepartmentHelp) {
+                    destinationDepartmentHelp.textContent = isOutward ?
+                        'Internal department responsible for sending this document.' :
+                        'Internal department where this document should go next.';
+                }
+
+                if (currentDepartmentHelp) {
+                    currentDepartmentHelp.textContent = isOutward ?
+                        'Internal department currently sending or holding the document.' :
+                        'Department receiving or holding the physical document.';
+                }
+
+                updateEntryLabels(isOutward);
+                applyCurrentDepartmentDefault(isOutward);
+            }
+
+            if (currentDepartmentSelect) {
+                currentDepartmentSelect.addEventListener('change', function () {
+                    if (currentDepartmentSelect.value !== autoDepartmentValue) {
+                        departmentManuallyChanged = true;
+                    }
+                });
+            }
+
+            entryTypeSelect.addEventListener('change', updateEntryWording);
+            updateEntryWording();
         }());
     </script>
 

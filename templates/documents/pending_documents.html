@@ -133,7 +133,7 @@
                                 {% endif %}
                                 <th>Tracking ID</th>
                                 <th>Subject</th>
-                                <th>Source</th>
+                                <th>Source / Destination</th>
                                 <th>Destination</th>
                                 <th>Current</th>
                                 <th>Status</th>
@@ -255,7 +255,7 @@
 
                                 <div class="mobile-card-meta">
                                     <div><span>Type</span><strong>{{ document.get_entry_type_display }}</strong></div>
-                                    <div><span>Source</span><strong>{{ document.source_display }}</strong></div>
+                                    <div><span>Source / Destination</span><strong>{{ document.source_display }}</strong></div>
                                     <div>
                                         <span>Current</span>
                                         <strong>{% if document.current_department %}{{ document.current_department }}{% else %}-{% endif %}</strong>

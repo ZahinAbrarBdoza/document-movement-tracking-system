@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
@@ -130,6 +131,30 @@ def courier_rate_source(document):
     return ''
 
 
+def receiving_desk_department():
+    return (
+        Department.objects.filter(name='Receiving Desk', is_active=True).first()
+        or Department.objects.filter(name='Receiving Desk').first()
+    )
+
+
+def user_profile_department(user):
+    profile = getattr(user, 'profile', None)
+    if profile and profile.department:
+        return profile.department
+    return None
+
+
+def document_form_department_context(request):
+    receiving_department = receiving_desk_department()
+    user_department = user_profile_department(request.user)
+
+    return {
+        'receiving_desk_department_id': receiving_department.pk if receiving_department else '',
+        'user_department_id': user_department.pk if user_department else '',
+    }
+
+
 def active_hierarchy_options(queryset):
     return JsonResponse(list(queryset.values('id', 'name')), safe=False)
 
@@ -199,6 +224,37 @@ def get_courier_rate(request):
         'quantity': courier_rate.quantity,
         'amount': format(courier_rate.amount, '.2f'),
         'remarks': courier_rate.remarks,
+    })
+
+
+@login_required
+def get_user_info(request):
+    user_id = request.GET.get('user_id', '').strip()
+    if not user_id.isdigit():
+        return JsonResponse(
+            {'error': 'User not found.'},
+            status=404,
+        )
+
+    user = get_user_model().objects.filter(
+        pk=user_id,
+        is_active=True,
+    ).select_related('profile__department').first()
+
+    if not user:
+        return JsonResponse(
+            {'error': 'User not found.'},
+            status=404,
+        )
+
+    profile = getattr(user, 'profile', None)
+    department = profile.department if profile and profile.department else None
+
+    return JsonResponse({
+        'id': user.id,
+        'name': user.get_full_name() or user.username,
+        'designation': profile.designation if profile else '',
+        'department': department.name if department else '',
     })
 
 
@@ -836,6 +892,8 @@ def document_create(request):
     if not can_edit_documents(request.user):
         return permission_denied_page(request, 'You do not have permission to create documents.')
 
+    receiving_department = receiving_desk_department()
+
     if request.method == 'POST':
         form = DocumentForm(request.POST, request.FILES)
 
@@ -855,10 +913,14 @@ def document_create(request):
 
             return redirect('document_detail', pk=document.pk)
     else:
-        form = DocumentForm()
+        initial = {}
+        if receiving_department:
+            initial['current_department'] = receiving_department.pk
+        form = DocumentForm(initial=initial)
 
     context = {
         'form': form,
+        **document_form_department_context(request),
     }
     return render(request, 'documents/document_form.html', context)
 
@@ -904,6 +966,7 @@ def document_edit(request, pk):
         'form': form,
         'document': document,
         'is_edit': True,
+        **document_form_department_context(request),
     }
     return render(request, 'documents/document_form.html', context)
 

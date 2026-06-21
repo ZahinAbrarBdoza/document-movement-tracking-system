@@ -19,6 +19,7 @@ urlpatterns = [
     path('api/areas/', views.get_areas, name='get_areas'),
     path('api/branches/', views.get_branches, name='get_branches'),
     path('api/courier-rate/', views.get_courier_rate, name='get_courier_rate'),
+    path('api/user-info/', views.get_user_info, name='get_user_info'),
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
 ]

@@ -64,6 +64,7 @@
             <a href="{% url 'forwarded_documents' %}" class="stat-card stat-link">
                 <span>Forwarded Documents</span>
                 <strong>{{ forwarded_documents }}</strong>
+                <span class="small-muted">Active</span>
             </a>
         {% endif %}
 
@@ -76,7 +77,9 @@
                 {% endif %}
             </span>
             <strong>{{ closed_documents }}</strong>
-            {% if not can_view_system_dashboard %}
+            {% if can_view_system_dashboard %}
+                <span class="small-muted">Received Document Closed by Respective Departments</span>
+            {% else %}
                 <span class="small-muted">Assigned to me</span>
             {% endif %}
         </a>
@@ -116,7 +119,7 @@
                         <tr>
                             <th>Tracking ID</th>
                             <th>Subject / বিষয়</th>
-                            <th>Source</th>
+                            <th>Source / Destination</th>
                             <th>Destination</th>
                             <th>Status</th>
                             <th>Priority</th>
