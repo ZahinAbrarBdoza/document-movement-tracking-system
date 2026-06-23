@@ -183,8 +183,14 @@ class Document(models.Model):
         ('pksf', 'PKSF'),
         ('mra', 'MRA'),
         ('bank', 'Bank'),
+        ('government_offices', 'Government Offices'),
         ('other', 'Other Organization'),
     ]
+    EXTERNAL_ORGANIZATION_DETAIL_TYPES = {
+        'bank',
+        'government_offices',
+        'other',
+    }
 
     tracking_id = models.CharField(max_length=50, unique=True, blank=True)
     entry_type = models.CharField(max_length=20, choices=ENTRY_TYPE_CHOICES)
@@ -348,10 +354,7 @@ class Document(models.Model):
     @property
     def source_display(self):
         if self.source_type == 'external':
-            if self.external_organization_type in {'pksf', 'mra'}:
-                return self.get_external_organization_type_display()
-
-            if self.external_organization_type in {'bank', 'other'}:
+            if self.uses_external_organization_details:
                 if self.external_organization_name and self.external_branch_name:
                     return f'{self.external_organization_name} - {self.external_branch_name}'
                 return (
@@ -372,6 +375,10 @@ class Document(models.Model):
             '-'
         )
 
+    @property
+    def uses_external_organization_details(self):
+        return self.external_organization_type in self.EXTERNAL_ORGANIZATION_DETAIL_TYPES
+
     def __str__(self):
         return f'{self.tracking_id} - {self.subject}'
 
@@ -382,6 +389,7 @@ class DocumentMovement(models.Model):
         ('physical_received', 'Physical Received'),
         ('forwarded', 'Forwarded'),
         ('received', 'Received'),
+        ('delegated', 'Delegated'),
         ('status_updated', 'Status Updated'),
         ('closed', 'Closed'),
         ('returned', 'Returned'),
@@ -422,3 +430,82 @@ class DocumentMovement(models.Model):
 
     def __str__(self):
         return f'{self.document.tracking_id} - {self.action}'
+
+
+class DocumentDelegation(models.Model):
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='delegations',
+    )
+    original_recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='document_delegations_as_original',
+    )
+    delegated_recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='document_delegations_received',
+    )
+    reason = models.TextField()
+    delegated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='document_delegations_created',
+    )
+    delegated_at = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='document_delegations_cancelled',
+    )
+    cancellation_reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['-delegated_at']
+        indexes = [
+            models.Index(fields=['document', 'is_active']),
+            models.Index(fields=['delegated_recipient', 'is_active']),
+            models.Index(fields=['original_recipient', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f'{self.document.tracking_id}: {self.original_recipient} to {self.delegated_recipient}'
+
+
+class UserDelegationRule(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='temporary_delegation_rules',
+    )
+    backup_receiver = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='temporary_delegation_backups',
+    )
+    start_date = models.DateField()
+    end_date = models.DateField()
+    reason = models.TextField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='created_temporary_delegation_rules',
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-start_date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active', 'start_date', 'end_date']),
+            models.Index(fields=['backup_receiver', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f'{self.user} to {self.backup_receiver} ({self.start_date} - {self.end_date})'

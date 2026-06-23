@@ -6,8 +6,10 @@ from .models import (
     Department,
     Division,
     Document,
+    DocumentDelegation,
     DocumentMovement,
     Region,
+    UserDelegationRule,
     UserProfile,
     Zone,
 )
@@ -216,3 +218,43 @@ class DocumentMovementAdmin(admin.ModelAdmin):
         'to_department',
         'created_at',
     )
+
+
+@admin.register(DocumentDelegation)
+class DocumentDelegationAdmin(admin.ModelAdmin):
+    list_display = (
+        'document',
+        'original_recipient',
+        'delegated_recipient',
+        'delegated_by',
+        'delegated_at',
+        'is_active',
+    )
+    search_fields = (
+        'document__tracking_id',
+        'document__subject',
+        'original_recipient__username',
+        'delegated_recipient__username',
+        'reason',
+    )
+    list_filter = ('is_active', 'delegated_at')
+    readonly_fields = ('delegated_at',)
+
+
+@admin.register(UserDelegationRule)
+class UserDelegationRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'backup_receiver',
+        'start_date',
+        'end_date',
+        'created_by',
+        'is_active',
+    )
+    search_fields = (
+        'user__username',
+        'backup_receiver__username',
+        'reason',
+    )
+    list_filter = ('is_active', 'start_date', 'end_date')
+    readonly_fields = ('created_at',)

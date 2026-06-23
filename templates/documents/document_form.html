@@ -48,66 +48,175 @@
         {% endif %}
 
         <section class="form-section">
-            <h3>1. Basic Information</h3>
+            <div class="form-section-header">
+                <h3>1. Document & Source/Destination Information</h3>
+                <p>Capture what the document is and where it came from or where it will go.</p>
+            </div>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.entry_type.id_for_label }}">{{ form.entry_type.label }} <span class="required-marker">*</span></label>
-                    {{ form.entry_type }}
-                    {% for error in form.entry_type.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+            <div class="form-subsection">
+                <div class="form-subsection-header">
+                    <h4>Basic Information</h4>
+                    <p>Document identity, reference, and workflow status.</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.document_type.id_for_label }}">{{ form.document_type.label }}</label>
-                    {{ form.document_type }}
-                    <div class="form-help">Select the matching document category.</div>
-                    {% for error in form.document_type.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.entry_type.id_for_label }}">{{ form.entry_type.label }} <span class="required-marker">*</span></label>
+                        {{ form.entry_type }}
+                        {% for error in form.entry_type.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.document_type.id_for_label }}">{{ form.document_type.label }}</label>
+                        {{ form.document_type }}
+                        <div class="form-help">Select the matching document category.</div>
+                        {% for error in form.document_type.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.reference_no.id_for_label }}">{{ form.reference_no.label }}</label>
+                        {{ form.reference_no }}
+                        {% for error in form.reference_no.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group form-span-2">
+                        <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
+                        {{ form.subject }}
+                        <div class="form-help">Optional. Bangla and English both are supported.</div>
+                        {% for error in form.subject.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }} <span class="required-marker">*</span></label>
+                        {{ form.priority }}
+                        {% for error in form.priority.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.status.id_for_label }}">{{ form.status.label }} <span class="required-marker">*</span></label>
+                        {{ form.status }}
+                        <div class="form-help">For new received physical documents, use "Physical Document Received".</div>
+                        {% for error in form.status.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-subsection">
+                <div class="form-subsection-header">
+                    <h4 id="source-destination-title">Source / Destination Information</h4>
+                    <p id="source-destination-help">Select where the document came from, if written on the document.</p>
                 </div>
 
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="{{ form.subject.id_for_label }}">{{ form.subject.label }}</label>
-                    {{ form.subject }}
-                    <div class="form-help">Optional. Bangla and English both are supported.</div>
-                    {% for error in form.subject.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.source_type.id_for_label }}" data-entry-label data-inward-label="Source Type" data-outward-label="Destination Type">{{ form.source_type.label }}</label>
+                        {{ form.source_type }}
+                        {% for error in form.source_type.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-                <div class="form-group">
-                    <label for="{{ form.priority.id_for_label }}">{{ form.priority.label }} <span class="required-marker">*</span></label>
-                    {{ form.priority }}
-                    {% for error in form.priority.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                    <div class="form-group source-external-field">
+                        <label for="{{ form.external_organization_type.id_for_label }}">{{ form.external_organization_type.label }} <span class="required-marker">*</span></label>
+                        {{ form.external_organization_type }}
+                        {% for error in form.external_organization_type.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-                <div class="form-group">
-                    <label for="{{ form.status.id_for_label }}">{{ form.status.label }} <span class="required-marker">*</span></label>
-                    {{ form.status }}
-                    <div class="form-help">For new received physical documents, use "Physical Document Received".</div>
-                    {% for error in form.status.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+                    <div class="form-group source-internal-field">
+                        <label for="{{ form.source_division.id_for_label }}" data-entry-label data-inward-label="Source Division" data-outward-label="Destination Division">{{ form.source_division.label }}</label>
+                        {{ form.source_division }}
+                        {% for error in form.source_division.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-internal-field">
+                        <label for="{{ form.source_region.id_for_label }}" data-entry-label data-inward-label="Source Region" data-outward-label="Destination Region">{{ form.source_region.label }}</label>
+                        {{ form.source_region }}
+                        {% for error in form.source_region.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-internal-field">
+                        <label for="{{ form.source_area.id_for_label }}" data-entry-label data-inward-label="Source Area" data-outward-label="Destination Area">{{ form.source_area.label }}</label>
+                        {{ form.source_area }}
+                        {% for error in form.source_area.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-internal-field">
+                        <label for="{{ form.source_branch.id_for_label }}" data-entry-label data-inward-label="Source Branch" data-outward-label="Destination Branch">{{ form.source_branch.label }}</label>
+                        {{ form.source_branch }}
+                        {% for error in form.source_branch.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-internal-field">
+                        <label for="{{ form.source_department.id_for_label }}" data-entry-label data-inward-label="Internal Source Department" data-outward-label="Internal Destination Department">{{ form.source_department.label }}</label>
+                        {{ form.source_department }}
+                        <div class="form-help" id="source-department-help">Use this if the document came from HR, ADT, OPS, etc.</div>
+                        {% for error in form.source_department.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-external-detail-field">
+                        <label for="{{ form.external_organization_name.id_for_label }}">{{ form.external_organization_name.label }} <span class="required-marker">*</span></label>
+                        {{ form.external_organization_name }}
+                        {% for error in form.external_organization_name.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group source-external-detail-field">
+                        <label for="{{ form.external_branch_name.id_for_label }}">{{ form.external_branch_name.label }} <span class="required-marker">*</span></label>
+                        {{ form.external_branch_name }}
+                        {% for error in form.external_branch_name.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </section>
 
         <section class="form-section">
-            <h3>2. Recipient & Notification Information</h3>
-
-            <div class="form-help" style="margin-bottom: 18px;">
-                Select Designated Person if a person is named. First Boss receives a copy when forwarded.
+            <div class="form-section-header">
+                <h3>2. Department & Assignment</h3>
+                <p>Set who holds the document now and who should act on it next.</p>
             </div>
 
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="{{ form.reference_no.id_for_label }}">{{ form.reference_no.label }}</label>
-                    {{ form.reference_no }}
-                    {% for error in form.reference_no.errors %}
+                    <label for="{{ form.current_department.id_for_label }}" data-entry-label data-inward-label="Current / Receiving Department" data-outward-label="Current / Sending Department">{{ form.current_department.label }}</label>
+                    {{ form.current_department }}
+                    <div class="form-help" id="current-department-help">Department receiving or holding the physical document.</div>
+                    {% for error in form.current_department.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.destination_department.id_for_label }}" data-entry-label data-inward-label="Destination Department" data-outward-label="Internal Sending Department">{{ form.destination_department.label }}</label>
+                    {{ form.destination_department }}
+                    <div class="form-help" id="destination-department-help">Internal department where this document should go next.</div>
+                    {% for error in form.destination_department.errors %}
                         <div class="form-error">{{ error }}</div>
                     {% endfor %}
                 </div>
@@ -144,7 +253,7 @@
                     {% endfor %}
                 </div>
 
-                <div class="form-group">
+                <div class="form-group form-span-2">
                     <label class="checkbox-label" for="{{ form.notification_required.id_for_label }}">
                         {{ form.notification_required }}
                         <span>{{ form.notification_required.label }}</span>
@@ -158,195 +267,110 @@
         </section>
 
         <section class="form-section">
-            <h3 id="source-destination-title">3. Source & Destination</h3>
-
-            <div class="form-help" id="source-destination-help" style="margin-bottom: 18px;">
-                Select where the document came from, if written on the document. Then select the internal destination department.
+            <div class="form-section-header">
+                <h3>3. Dates, Dispatch, Attachment & Remarks</h3>
+                <p>Record the physical movement date, outward dispatch details, files, and notes.</p>
             </div>
 
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="{{ form.source_type.id_for_label }}" data-entry-label data-inward-label="Source Type" data-outward-label="Destination Type">{{ form.source_type.label }}</label>
-                    {{ form.source_type }}
-                    {% for error in form.source_type.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+            <div class="form-subsection">
+                <div class="form-subsection-header">
+                    <h4>Dates</h4>
+                    <p>Only the date required for the selected entry type is shown.</p>
                 </div>
 
-                <div class="form-group source-internal-field">
-                    <label for="{{ form.source_division.id_for_label }}" data-entry-label data-inward-label="Source Division" data-outward-label="Destination Division">{{ form.source_division.label }}</label>
-                    {{ form.source_division }}
-                    {% for error in form.source_division.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                <div class="form-grid">
+                    <div class="form-group" id="received-date-field">
+                        <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }} <span class="required-marker">*</span></label>
+                        {{ form.received_date }}
+                        {% for error in form.received_date.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-                <div class="form-group source-internal-field">
-                    <label for="{{ form.source_region.id_for_label }}" data-entry-label data-inward-label="Source Region" data-outward-label="Destination Region">{{ form.source_region.label }}</label>
-                    {{ form.source_region }}
-                    {% for error in form.source_region.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-internal-field">
-                    <label for="{{ form.source_area.id_for_label }}" data-entry-label data-inward-label="Source Area" data-outward-label="Destination Area">{{ form.source_area.label }}</label>
-                    {{ form.source_area }}
-                    {% for error in form.source_area.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-internal-field">
-                    <label for="{{ form.source_branch.id_for_label }}" data-entry-label data-inward-label="Source Branch" data-outward-label="Destination Branch">{{ form.source_branch.label }}</label>
-                    {{ form.source_branch }}
-                    {% for error in form.source_branch.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-internal-field">
-                    <label for="{{ form.source_department.id_for_label }}" data-entry-label data-inward-label="Internal Source Department" data-outward-label="Destination Department">{{ form.source_department.label }}</label>
-                    {{ form.source_department }}
-                    <div class="form-help" id="source-department-help">Use this if the document came from HR, ADT, OPS, etc.</div>
-                    {% for error in form.source_department.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-external-field">
-                    <label for="{{ form.external_organization_type.id_for_label }}">{{ form.external_organization_type.label }} <span class="required-marker">*</span></label>
-                    {{ form.external_organization_type }}
-                    {% for error in form.external_organization_type.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-external-detail-field">
-                    <label for="{{ form.external_organization_name.id_for_label }}">{{ form.external_organization_name.label }} <span class="required-marker">*</span></label>
-                    {{ form.external_organization_name }}
-                    {% for error in form.external_organization_name.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group source-external-detail-field">
-                    <label for="{{ form.external_branch_name.id_for_label }}">{{ form.external_branch_name.label }} <span class="required-marker">*</span></label>
-                    {{ form.external_branch_name }}
-                    {% for error in form.external_branch_name.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.destination_department.id_for_label }}" data-entry-label data-inward-label="Destination Department" data-outward-label="Internal Sending Department">{{ form.destination_department.label }}</label>
-                    {{ form.destination_department }}
-                    <div class="form-help" id="destination-department-help">Internal department where this document should go next.</div>
-                    {% for error in form.destination_department.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.current_department.id_for_label }}" data-entry-label data-inward-label="Current / Receiving Department" data-outward-label="Current / Sending Department">{{ form.current_department.label }}</label>
-                    {{ form.current_department }}
-                    <div class="form-help" id="current-department-help">Department receiving or holding the physical document.</div>
-                    {% for error in form.current_department.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+                    <div class="form-group" id="sent-date-field">
+                        <label for="{{ form.sent_date.id_for_label }}">{{ form.sent_date.label }} <span class="required-marker">*</span></label>
+                        {{ form.sent_date }}
+                        {% for error in form.sent_date.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-        </section>
 
-        <section class="form-section">
-            <h3>4. Dates & Physical Copy</h3>
-
-            <div class="form-grid">
-                <div class="form-group" id="received-date-field">
-                    <label for="{{ form.received_date.id_for_label }}">{{ form.received_date.label }} <span class="required-marker">*</span></label>
-                    {{ form.received_date }}
-                    {% for error in form.received_date.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+            <div class="form-subsection" id="courier-dispatch-section" hidden>
+                <div class="form-subsection-header">
+                    <h4>Courier / Dispatch</h4>
+                    <p>Use a saved dispatch rate or enter an outward item manually.</p>
                 </div>
 
-                <div class="form-group" id="sent-date-field">
-                    <label for="{{ form.sent_date.id_for_label }}">{{ form.sent_date.label }} <span class="required-marker">*</span></label>
-                    {{ form.sent_date }}
-                    {% for error in form.sent_date.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-            </div>
-        </section>
+                <div class="form-grid">
+                    <div class="form-group form-span-2">
+                        <label for="{{ form.courier_rate.id_for_label }}">{{ form.courier_rate.label }}</label>
+                        {{ form.courier_rate }}
+                        {% for error in form.courier_rate.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-        <section class="form-section" id="courier-dispatch-section" hidden>
-            <h3>5. Courier / Dispatch Cost Information</h3>
+                    <div class="form-group">
+                        <label for="{{ form.outward_description.id_for_label }}">{{ form.outward_description.label }}</label>
+                        {{ form.outward_description }}
+                        {% for error in form.outward_description.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-            <div class="form-grid">
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label for="{{ form.courier_rate.id_for_label }}">{{ form.courier_rate.label }}</label>
-                    {{ form.courier_rate }}
-                    {% for error in form.courier_rate.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                    <div class="form-group">
+                        <label for="{{ form.outward_quantity.id_for_label }}">{{ form.outward_quantity.label }}</label>
+                        {{ form.outward_quantity }}
+                        {% for error in form.outward_quantity.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-                <div class="form-group">
-                    <label for="{{ form.outward_description.id_for_label }}">{{ form.outward_description.label }}</label>
-                    {{ form.outward_description }}
-                    {% for error in form.outward_description.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
+                    <div class="form-group">
+                        <label for="{{ form.outward_amount.id_for_label }}">{{ form.outward_amount.label }}</label>
+                        {{ form.outward_amount }}
+                        {% for error in form.outward_amount.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
 
-                <div class="form-group">
-                    <label for="{{ form.outward_quantity.id_for_label }}">{{ form.outward_quantity.label }}</label>
-                    {{ form.outward_quantity }}
-                    {% for error in form.outward_quantity.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group">
-                    <label for="{{ form.outward_amount.id_for_label }}">{{ form.outward_amount.label }}</label>
-                    {{ form.outward_amount }}
-                    {% for error in form.outward_amount.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
-                </div>
-
-                <div class="form-group">
-                    <label class="checkbox-label" for="{{ form.outward_is_manual.id_for_label }}">
-                        {{ form.outward_is_manual }}
-                        <span>{{ form.outward_is_manual.label }}</span>
-                    </label>
-                    {% for error in form.outward_is_manual.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+                    <div class="form-group">
+                        <label class="checkbox-label" for="{{ form.outward_is_manual.id_for_label }}">
+                            {{ form.outward_is_manual }}
+                            <span>{{ form.outward_is_manual.label }}</span>
+                        </label>
+                        {% for error in form.outward_is_manual.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
-        </section>
 
-        <section class="form-section">
-            <h3>6. Remarks & Attachment</h3>
-
-            <div class="form-grid single">
-                <div class="form-group">
-                    <label for="{{ form.remarks.id_for_label }}">{{ form.remarks.label }}</label>
-                    {{ form.remarks }}
-                    {% for error in form.remarks.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+            <div class="form-subsection">
+                <div class="form-subsection-header">
+                    <h4>Attachment & Remarks</h4>
+                    <p>Add supporting files and any notes needed for follow-up.</p>
                 </div>
 
-                <div class="form-group">
-                    <label for="{{ form.attachment.id_for_label }}">{{ form.attachment.label }}</label>
-                    {{ form.attachment }}
-                    <div class="form-help">Optional: upload scanned copy/photo/PDF if available.</div>
-                    {% for error in form.attachment.errors %}
-                        <div class="form-error">{{ error }}</div>
-                    {% endfor %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="{{ form.attachment.id_for_label }}">{{ form.attachment.label }}</label>
+                        {{ form.attachment }}
+                        <div class="form-help">Optional: upload scanned copy/photo/PDF if available.</div>
+                        {% for error in form.attachment.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-group form-span-2">
+                        <label for="{{ form.remarks.id_for_label }}">{{ form.remarks.label }}</label>
+                        {{ form.remarks }}
+                        {% for error in form.remarks.errors %}
+                            <div class="form-error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </section>
@@ -694,7 +718,7 @@
             }
 
             function updateExternalDetails() {
-                var needsDetails = organizationTypeSelect.value === 'bank' || organizationTypeSelect.value === 'other';
+                var needsDetails = ['bank', 'government_offices', 'other'].indexOf(organizationTypeSelect.value) !== -1;
                 setHidden(externalDetailFields, sourceTypeSelect.value !== 'external' || !needsDetails);
                 organizationNameInput.required = sourceTypeSelect.value === 'external' && needsDetails;
                 externalBranchInput.required = sourceTypeSelect.value === 'external' && needsDetails;
@@ -762,18 +786,18 @@
                 var isOutward = entryTypeSelect.value === 'outward';
 
                 if (sourceTitle) {
-                    sourceTitle.textContent = isOutward ? '3. Destination & Sending Information' : '3. Source & Destination';
+                    sourceTitle.textContent = isOutward ? 'Destination Information' : 'Source / Destination Information';
                 }
 
                 if (sourceHelp) {
                     sourceHelp.textContent = isOutward ?
-                        'Select where the document will be sent. Then select the internal sending department.' :
-                        'Select where the document came from, if written on the document. Then select the internal destination department.';
+                        'Select where the document will be sent, whether internal or external.' :
+                        'Select where the document came from, whether internal or external.';
                 }
 
                 if (sourceDepartmentHelp) {
                     sourceDepartmentHelp.textContent = isOutward ?
-                        'Use this when the destination is an internal department.' :
+                        'Use this when the destination is an internal department or office.' :
                         'Use this if the document came from HR, ADT, OPS, etc.';
                 }
 

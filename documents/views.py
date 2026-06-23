@@ -12,15 +12,22 @@ from django.utils import timezone
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
-from .forms import DocumentForm, DocumentMovementForm
+from .forms import (
+    DocumentDelegationForm,
+    DocumentForm,
+    DocumentMovementForm,
+    UserDelegationRuleForm,
+)
 from .models import (
     Area,
     Branch,
     CourierRate,
     Department,
     Document,
+    DocumentDelegation,
     DocumentMovement,
     Region,
+    UserDelegationRule,
     Zone,
 )
 from .services import send_forward_notification
@@ -65,6 +72,32 @@ def is_designated_person_for_document(user, document):
     )
 
 
+def active_delegation_for_document(document):
+    prefetched_delegations = getattr(document, '_prefetched_objects_cache', {}).get('delegations')
+    if prefetched_delegations is not None:
+        return next((delegation for delegation in prefetched_delegations if delegation.is_active), None)
+    return document.delegations.filter(is_active=True).select_related(
+        'original_recipient',
+        'delegated_recipient',
+        'delegated_by',
+    ).first()
+
+
+def is_active_delegated_recipient_for_document(user, document):
+    if not user.is_authenticated:
+        return False
+    delegation = active_delegation_for_document(document)
+    return bool(delegation and delegation.delegated_recipient_id == user.id)
+
+
+def can_delegate_document(user, document):
+    return (
+        is_designated_person_for_document(user, document) and
+        document.status != 'closed' and
+        not active_delegation_for_document(document)
+    )
+
+
 def can_bulk_forward(user):
     if not user.is_authenticated:
         return False
@@ -92,25 +125,55 @@ def can_user_close_document(user, document):
         return False
     if user.is_superuser or user_has_named_group(user, BULK_CLOSE_ALL_GROUPS):
         return True
-    return document.designated_person_id == user.id
+    return (
+        document.designated_person_id == user.id or
+        is_active_delegated_recipient_for_document(user, document)
+    )
 
 
 def can_view_document(user, document):
     return (
         can_view_system_documents(user) or
-        is_designated_person_for_document(user, document)
+        is_designated_person_for_document(user, document) or
+        is_active_delegated_recipient_for_document(user, document)
     )
 
 
 def can_update_document_status(user, document):
     return (
         can_edit_documents(user) or
-        is_designated_person_for_document(user, document)
+        is_designated_person_for_document(user, document) or
+        is_active_delegated_recipient_for_document(user, document)
     )
 
 
 def can_view_reports(user):
     return user_in_groups(user, REPORT_GROUPS)
+
+
+def can_view_delegation_reports(user):
+    return user_in_groups(user, ['Admin', 'Receiving Desk', 'Management'])
+
+
+def assigned_documents_filter(user):
+    return (
+        Q(designated_person=user) |
+        Q(delegations__is_active=True, delegations__delegated_recipient=user)
+    )
+
+
+def active_temporary_delegation_rule_for_user(user, today=None):
+    if not user or not user.is_authenticated:
+        return None
+    if today is None:
+        today = timezone.now().date()
+    return UserDelegationRule.objects.filter(
+        user=user,
+        is_active=True,
+        start_date__lte=today,
+        end_date__gte=today,
+        backup_receiver__is_active=True,
+    ).select_related('backup_receiver').order_by('-created_at').first()
 
 
 def movement_action_from_status(status):
@@ -301,6 +364,8 @@ def selected_documents_queryset(document_ids):
         'current_department',
         'designated_person',
         'first_boss',
+    ).prefetch_related(
+        'delegations',
     ).order_by('tracking_id')
 
 
@@ -472,9 +537,20 @@ def filter_documents_from_request(request, base_queryset=None):
 def dashboard(request):
     pending_status_exclusions = ['closed', 'forwarded']
     my_assigned_documents_count = Document.objects.filter(
-        designated_person=request.user
-    ).exclude(status='closed').count()
+        assigned_documents_filter(request.user)
+    ).exclude(status='closed').distinct().count()
     can_view_system_dashboard = can_view_system_documents(request.user)
+    delegated_to_me_count = DocumentDelegation.objects.filter(
+        delegated_recipient=request.user,
+        is_active=True,
+    ).exclude(document__status='closed').count()
+    delegated_by_me_count = DocumentDelegation.objects.filter(
+        Q(delegated_by=request.user) |
+        Q(original_recipient=request.user),
+        is_active=True,
+    ).count()
+    active_delegations_count = DocumentDelegation.objects.filter(is_active=True).count()
+    active_leave_rules_count = UserDelegationRule.objects.filter(is_active=True).count()
 
     related_fields = [
         'source_zone', 'source_division', 'source_region', 'source_area',
@@ -493,7 +569,9 @@ def dashboard(request):
         recent_documents = Document.objects.select_related(*related_fields).order_by('-created_at')[:8]
         dashboard_table_title = 'Recent Documents'
     else:
-        assigned_documents = Document.objects.filter(designated_person=request.user)
+        assigned_documents = Document.objects.filter(
+            assigned_documents_filter(request.user),
+        ).distinct()
         total_documents = assigned_documents.count()
         closed_documents = assigned_documents.filter(status='closed').count()
         urgent_pending = assigned_documents.filter(
@@ -519,6 +597,11 @@ def dashboard(request):
         'can_view_system_dashboard': can_view_system_dashboard,
         'dashboard_table_title': dashboard_table_title,
         'my_assigned_documents_count': my_assigned_documents_count,
+        'delegated_to_me_count': delegated_to_me_count,
+        'delegated_by_me_count': delegated_by_me_count,
+        'active_delegations_count': active_delegations_count,
+        'active_leave_rules_count': active_leave_rules_count,
+        'can_view_delegation_reports': can_view_delegation_reports(request.user),
     }
     if can_view_system_dashboard:
         context.update({
@@ -545,7 +628,9 @@ def document_list(request):
             'designated_person',
             'first_boss',
             'courier_rate',
-        ).filter(designated_person=request.user).order_by('-created_at')
+        ).filter(
+            assigned_documents_filter(request.user),
+        ).distinct().order_by('-created_at')
 
     documents = filter_documents_from_request(request, base_queryset)
 
@@ -599,7 +684,9 @@ def pending_documents(request):
     ).exclude(status__in=['closed', 'forwarded']).order_by('created_at')
 
     if not can_view_system_documents(request.user):
-        base_queryset = base_queryset.filter(designated_person=request.user)
+        base_queryset = base_queryset.filter(
+            assigned_documents_filter(request.user),
+        ).distinct()
 
     documents = filter_documents_from_request(request, base_queryset)
 
@@ -654,7 +741,9 @@ def forwarded_documents(request):
     ).filter(status='forwarded').order_by('-updated_at')
 
     if not can_view_system_documents(request.user):
-        base_queryset = base_queryset.filter(designated_person=request.user)
+        base_queryset = base_queryset.filter(
+            assigned_documents_filter(request.user),
+        ).distinct()
 
     documents = filter_documents_from_request(request, base_queryset)
 
@@ -708,8 +797,8 @@ def my_assigned_documents(request):
         'first_boss',
         'courier_rate',
     ).filter(
-        designated_person=request.user,
-    ).exclude(status='closed').order_by('created_at')
+        assigned_documents_filter(request.user),
+    ).exclude(status='closed').distinct().order_by('created_at')
 
     if query:
         documents = documents.filter(
@@ -987,13 +1076,14 @@ def document_detail(request, pk):
         'designated_person',
         'first_boss',
         'courier_rate',
-        ),
+        ).prefetch_related('delegations'),
         pk=pk
     )
 
     if not can_view_document(request.user, document):
         return permission_denied_page(request, 'You do not have permission to view this document.')
 
+    active_delegation = active_delegation_for_document(document)
     movements = document.movements.select_related(
         'from_department',
         'to_department',
@@ -1005,8 +1095,85 @@ def document_detail(request, pk):
         'movements': movements,
         'can_edit': can_edit_documents(request.user),
         'can_update_status': can_update_document_status(request.user, document),
+        'can_delegate': can_delegate_document(request.user, document),
+        'active_delegation': active_delegation,
     }
     return render(request, 'documents/document_detail.html', context)
+
+
+@login_required
+def document_delegate_receipt(request, pk):
+    document = get_object_or_404(
+        Document.objects.select_related(
+            'designated_person',
+            'current_department',
+            'destination_department',
+        ).prefetch_related('delegations'),
+        pk=pk,
+    )
+
+    if not is_designated_person_for_document(request.user, document):
+        return permission_denied_page(request, 'Only the original designated recipient can delegate receipt.')
+
+    if document.status == 'closed':
+        return permission_denied_page(request, 'Closed documents cannot be delegated.')
+
+    if active_delegation_for_document(document):
+        return permission_denied_page(request, 'This document already has an active delegation.')
+
+    temporary_rule = active_temporary_delegation_rule_for_user(request.user)
+    initial = {}
+    if temporary_rule:
+        initial['delegated_recipient'] = temporary_rule.backup_receiver_id
+
+    if request.method == 'POST':
+        form = DocumentDelegationForm(request.POST, document=document)
+        if form.is_valid():
+            delegated_recipient = form.cleaned_data['delegated_recipient']
+            reason = form.cleaned_data['reason']
+
+            with transaction.atomic():
+                if document.delegations.filter(is_active=True).exists():
+                    form.add_error(None, 'This document already has an active delegation.')
+                else:
+                    delegation = DocumentDelegation.objects.create(
+                        document=document,
+                        original_recipient=document.designated_person,
+                        delegated_recipient=delegated_recipient,
+                        reason=reason,
+                        delegated_by=request.user,
+                        delegated_at=timezone.now(),
+                    )
+                    original_name = (
+                        delegation.original_recipient.get_full_name() or
+                        delegation.original_recipient.username
+                    )
+                    delegated_name = (
+                        delegation.delegated_recipient.get_full_name() or
+                        delegation.delegated_recipient.username
+                    )
+                    DocumentMovement.objects.create(
+                        document=document,
+                        action='delegated',
+                        from_department=document.current_department,
+                        to_department=document.current_department,
+                        performed_by=request.user,
+                        remarks=(
+                            f'Receipt delegated from {original_name} to '
+                            f'{delegated_name}. Reason: {reason}'
+                        ),
+                    )
+                    messages.success(request, 'Receipt delegated successfully.')
+                    return redirect('document_detail', pk=document.pk)
+    else:
+        form = DocumentDelegationForm(document=document, initial=initial)
+
+    context = {
+        'document': document,
+        'form': form,
+        'temporary_rule': temporary_rule,
+    }
+    return render(request, 'documents/document_delegate_form.html', context)
 
 
 @login_required
@@ -1023,9 +1190,9 @@ def document_update_movement(request, pk):
     )
 
     is_editor = can_edit_documents(request.user)
-    is_assigned_person = is_designated_person_for_document(request.user, document)
+    can_update_status = can_update_document_status(request.user, document)
 
-    if not is_editor and not is_assigned_person:
+    if not can_update_status:
         return permission_denied_page(request, 'You do not have permission to update or forward documents.')
 
     status_choices = None if is_editor else [('closed', 'Closed')]
@@ -1105,6 +1272,39 @@ def document_update_movement(request, pk):
 
 
 @login_required
+def my_delegation_settings(request):
+    if request.method == 'POST':
+        form = UserDelegationRuleForm(request.POST, user=request.user)
+        if form.is_valid():
+            rule = form.save(commit=False)
+            rule.user = request.user
+            rule.created_by = request.user
+            rule.save()
+            messages.success(request, 'Temporary delegation rule saved.')
+            return redirect('my_delegation_settings')
+    else:
+        form = UserDelegationRuleForm(user=request.user)
+
+    today = timezone.now().date()
+    rules = UserDelegationRule.objects.filter(user=request.user).select_related(
+        'backup_receiver',
+        'created_by',
+    ).order_by('-is_active', '-start_date', '-created_at')
+    active_rule = rules.filter(
+        is_active=True,
+        start_date__lte=today,
+        end_date__gte=today,
+    ).first()
+
+    context = {
+        'form': form,
+        'rules': rules,
+        'active_rule': active_rule,
+    }
+    return render(request, 'documents/my_delegation_settings.html', context)
+
+
+@login_required
 def reports_dashboard(request):
     if not can_view_reports(request.user):
         return permission_denied_page(request, 'You do not have permission to view reports.')
@@ -1137,6 +1337,8 @@ def reports_dashboard(request):
     ).count()
     notifications_sent = Document.objects.filter(notification_sent=True).count()
     notifications_failed = Document.objects.exclude(notification_error='').count()
+    active_delegations = DocumentDelegation.objects.filter(is_active=True).count()
+    active_leave_rules = UserDelegationRule.objects.filter(is_active=True).count()
     total_outwarding_documents = Document.objects.filter(entry_type='outward').count()
     total_dispatch_cost = (
         Document.objects.filter(entry_type='outward').aggregate(
@@ -1258,6 +1460,9 @@ def reports_dashboard(request):
         'closed_today': closed_today,
         'notifications_sent': notifications_sent,
         'notifications_failed': notifications_failed,
+        'active_delegations': active_delegations,
+        'active_leave_rules': active_leave_rules,
+        'can_view_delegation_reports': can_view_delegation_reports(request.user),
         'total_outwarding_documents': total_outwarding_documents,
         'total_dispatch_cost': total_dispatch_cost,
         'department_pending': department_pending,
@@ -1272,6 +1477,84 @@ def reports_dashboard(request):
     }
 
     return render(request, 'documents/reports_dashboard.html', context)
+
+
+@login_required
+def delegation_report(request):
+    if not can_view_delegation_reports(request.user):
+        return permission_denied_page(request, 'You do not have permission to view delegation reports.')
+
+    user_model = get_user_model()
+    original_recipient_id = request.GET.get('original_recipient', '').strip()
+    delegated_recipient_id = request.GET.get('delegated_recipient', '').strip()
+    date_from = request.GET.get('date_from', '').strip()
+    date_to = request.GET.get('date_to', '').strip()
+    status = request.GET.get('status', '').strip()
+    document_status = request.GET.get('document_status', '').strip()
+
+    delegations = DocumentDelegation.objects.select_related(
+        'document',
+        'original_recipient',
+        'delegated_recipient',
+        'delegated_by',
+        'cancelled_by',
+    ).order_by('-delegated_at')
+
+    if original_recipient_id.isdigit():
+        delegations = delegations.filter(original_recipient_id=original_recipient_id)
+
+    if delegated_recipient_id.isdigit():
+        delegations = delegations.filter(delegated_recipient_id=delegated_recipient_id)
+
+    if date_from:
+        delegations = delegations.filter(delegated_at__date__gte=date_from)
+
+    if date_to:
+        delegations = delegations.filter(delegated_at__date__lte=date_to)
+
+    if status == 'active':
+        delegations = delegations.filter(is_active=True)
+    elif status == 'cancelled':
+        delegations = delegations.filter(is_active=False)
+
+    if document_status:
+        delegations = delegations.filter(document__status=document_status)
+
+    users = user_model.objects.filter(is_active=True).order_by(
+        'first_name',
+        'last_name',
+        'username',
+    )
+    report_rows = []
+    for delegation in delegations:
+        closed_movement = delegation.document.movements.filter(
+            action='closed',
+        ).select_related('performed_by').order_by('-created_at').first()
+        report_rows.append({
+            'delegation': delegation,
+            'closed_by': closed_movement.performed_by if closed_movement else None,
+            'closed_at': delegation.document.closed_at or (
+                closed_movement.created_at if closed_movement else None
+            ),
+        })
+
+    context = {
+        'report_rows': report_rows,
+        'users': users,
+        'status_choices': [
+            ('active', 'Active'),
+            ('cancelled', 'Cancelled'),
+        ],
+        'document_status_choices': Document.STATUS_CHOICES,
+        'selected_original_recipient': original_recipient_id,
+        'selected_delegated_recipient': delegated_recipient_id,
+        'selected_date_from': date_from,
+        'selected_date_to': date_to,
+        'selected_status': status,
+        'selected_document_status': document_status,
+        'total_found': len(report_rows),
+    }
+    return render(request, 'documents/delegation_report.html', context)
 
 
 @login_required

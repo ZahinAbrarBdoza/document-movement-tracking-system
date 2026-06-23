@@ -11,7 +11,9 @@ urlpatterns = [
     path('documents/my-assigned/', views.my_assigned_documents, name='my_assigned_documents'),
     path('documents/bulk-forward/', views.bulk_forward_documents, name='bulk_forward_documents'),
     path('documents/bulk-close/', views.bulk_close_documents, name='bulk_close_documents'),
+    path('delegation/settings/', views.my_delegation_settings, name='my_delegation_settings'),
     path('documents/<int:pk>/edit/', views.document_edit, name='document_edit'),
+    path('documents/<int:pk>/delegate/', views.document_delegate_receipt, name='document_delegate_receipt'),
     path('documents/<int:pk>/', views.document_detail, name='document_detail'),
     path('documents/<int:pk>/update/', views.document_update_movement, name='document_update_movement'),
 
@@ -22,4 +24,5 @@ urlpatterns = [
     path('api/user-info/', views.get_user_info, name='get_user_info'),
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
+    path('reports/delegations/', views.delegation_report, name='delegation_report'),
 ]

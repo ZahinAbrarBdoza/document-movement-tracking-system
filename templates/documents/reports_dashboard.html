@@ -12,6 +12,9 @@
 
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <a href="{% url 'export_documents_excel' %}" class="btn-secondary">Export Excel</a>
+            {% if can_view_delegation_reports %}
+                <a href="{% url 'delegation_report' %}" class="btn-secondary">Delegation Report</a>
+            {% endif %}
             <a href="{% url 'document_list' %}" class="btn-secondary">View All Documents</a>
         </div>
     </section>
@@ -103,6 +106,23 @@
                 </div>
             </div>
         </div>
+
+        {% if can_view_delegation_reports %}
+            <div class="kpi-group">
+                <h3>Delegations</h3>
+                <div class="kpi-grid-six">
+                    <div class="kpi-card pending">
+                        <span>Active Delegations</span>
+                        <strong>{{ active_delegations }}</strong>
+                    </div>
+
+                    <div class="kpi-card">
+                        <span>Active Leave Delegation Rules</span>
+                        <strong>{{ active_leave_rules }}</strong>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
     </section>
 
     <section class="report-grid">

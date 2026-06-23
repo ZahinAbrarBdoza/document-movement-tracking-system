@@ -18,6 +18,9 @@
             <div class="detail-header">
                 <span class="tracking">{{ document.tracking_id }}</span>
                 <h2>{{ document.subject|default:"Subject not mentioned" }}</h2>
+                {% if active_delegation %}
+                    <span class="badge">Delegated</span>
+                {% endif %}
                 <p>
                     Created by
                     {% if document.created_by %}
@@ -125,7 +128,7 @@
                             </strong>
                         </div>
 
-                        {% if document.external_organization_type == 'bank' or document.external_organization_type == 'other' %}
+                        {% if document.uses_external_organization_details %}
                             <div class="info-item">
                                 <span>Organization Name</span>
                                 <strong>
@@ -398,6 +401,12 @@
                 </div>
 
                 <div class="detail-actions">
+                    {% if can_delegate %}
+                        <a href="{% url 'document_delegate_receipt' document.pk %}" class="small-action">
+                            Delegate Receipt
+                        </a>
+                    {% endif %}
+
                     {% if can_update_status %}
                         <a href="{% url 'document_update_movement' document.pk %}" class="small-action">
                             {% if can_edit %}
@@ -421,6 +430,41 @@
                     {% endif %}
                 </div>
             </div>
+
+            {% if active_delegation %}
+                <div class="quick-card">
+                    <h3>Delegation Information</h3>
+
+                    <div class="meta-list">
+                        <div class="meta-row">
+                            <span>Original Recipient</span>
+                            <strong>{{ active_delegation.original_recipient.get_full_name|default:active_delegation.original_recipient.username }}</strong>
+                        </div>
+
+                        <div class="meta-row">
+                            <span>Delegated Receiver</span>
+                            <strong>{{ active_delegation.delegated_recipient.get_full_name|default:active_delegation.delegated_recipient.username }}</strong>
+                        </div>
+
+                        <div class="meta-row">
+                            <span>Delegated By</span>
+                            <strong>{{ active_delegation.delegated_by.get_full_name|default:active_delegation.delegated_by.username }}</strong>
+                        </div>
+
+                        <div class="meta-row">
+                            <span>Delegated At</span>
+                            <strong>{{ active_delegation.delegated_at|date:"d M Y, h:i A" }}</strong>
+                        </div>
+
+                        <div class="meta-row">
+                            <span>Status</span>
+                            <strong>{% if active_delegation.is_active %}Active{% else %}Cancelled{% endif %}</strong>
+                        </div>
+                    </div>
+
+                    <p class="remarks-box">{{ active_delegation.reason }}</p>
+                </div>
+            {% endif %}
 
             <div class="quick-card">
                 <h3>Attachment</h3>

@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from .models import Document
 
 
@@ -11,12 +13,14 @@ def user_role_flags(request):
             'global_can_bulk_forward': False,
             'global_can_bulk_close': False,
             'global_can_view_system_documents': False,
+            'global_can_view_delegation_reports': False,
             'global_my_assigned_count': 0,
         }
 
     assigned_count = Document.objects.filter(
-        designated_person=user,
-    ).exclude(status='closed').count()
+        Q(designated_person=user) |
+        Q(delegations__is_active=True, delegations__delegated_recipient=user),
+    ).exclude(status='closed').distinct().count()
 
     if user.is_superuser:
         return {
@@ -25,6 +29,7 @@ def user_role_flags(request):
             'global_can_bulk_forward': True,
             'global_can_bulk_close': True,
             'global_can_view_system_documents': True,
+            'global_can_view_delegation_reports': True,
             'global_my_assigned_count': assigned_count,
         }
 
@@ -35,6 +40,11 @@ def user_role_flags(request):
         'HR',
         'ADT',
         'OPS',
+        'Management',
+    }))
+    can_view_delegation_reports = bool(groups.intersection({
+        'Admin',
+        'Receiving Desk',
         'Management',
     }))
     can_bulk_close = (
@@ -48,5 +58,6 @@ def user_role_flags(request):
         'global_can_bulk_forward': bool(groups.intersection({'Admin', 'Receiving Desk'})),
         'global_can_bulk_close': can_bulk_close,
         'global_can_view_system_documents': can_view_system_documents,
+        'global_can_view_delegation_reports': can_view_delegation_reports,
         'global_my_assigned_count': assigned_count,
     }

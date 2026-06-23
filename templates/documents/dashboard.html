@@ -37,6 +37,16 @@
                     My Assigned
                 </a>
             {% endif %}
+
+            <a href="{% url 'my_delegation_settings' %}" class="dashboard-action">
+                Delegation Settings
+            </a>
+
+            {% if can_view_delegation_reports %}
+                <a href="{% url 'delegation_report' %}" class="dashboard-action">
+                    Delegation Report
+                </a>
+            {% endif %}
         </div>
     </section>
 
@@ -103,6 +113,34 @@
             <strong>{{ my_assigned_documents_count }}</strong>
             <span class="small-muted">Open documents assigned to me</span>
         </a>
+
+        {% if can_view_system_dashboard %}
+            {% if can_view_delegation_reports %}
+                <a href="{% url 'delegation_report' %}" class="stat-card stat-link">
+                    <span>Active Delegations</span>
+                    <strong>{{ active_delegations_count }}</strong>
+                    <span class="small-muted">Document-level delegations</span>
+                </a>
+
+                <a href="{% url 'delegation_report' %}" class="stat-card stat-link">
+                    <span>Active Leave Delegation Rules</span>
+                    <strong>{{ active_leave_rules_count }}</strong>
+                    <span class="small-muted">Temporary delegation settings</span>
+                </a>
+            {% endif %}
+        {% else %}
+            <a href="{% url 'my_assigned_documents' %}" class="stat-card stat-link">
+                <span>Delegated to Me</span>
+                <strong>{{ delegated_to_me_count }}</strong>
+                <span class="small-muted">Open delegated documents</span>
+            </a>
+
+            <a href="{% url 'my_delegation_settings' %}" class="stat-card stat-link">
+                <span>Delegated by Me</span>
+                <strong>{{ delegated_by_me_count }}</strong>
+                <span class="small-muted">Active delegations</span>
+            </a>
+        {% endif %}
     </section>
 
     

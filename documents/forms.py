@@ -8,8 +8,10 @@ from .models import (
     Department,
     Division,
     Document,
+    DocumentDelegation,
     DocumentMovement,
     Region,
+    UserDelegationRule,
 )
 
 
@@ -306,7 +308,7 @@ class DocumentForm(forms.ModelForm):
 
             if not external_organization_type:
                 self.add_error('external_organization_type', 'Select an organization type.')
-            elif external_organization_type in {'bank', 'other'}:
+            elif external_organization_type in Document.EXTERNAL_ORGANIZATION_DETAIL_TYPES:
                 if not external_organization_name:
                     self.add_error('external_organization_name', 'Enter the organization name.')
                 if not external_branch_name:
@@ -334,6 +336,131 @@ class DocumentForm(forms.ModelForm):
         return cleaned_data
 
 
+
+
+class DocumentDelegationForm(forms.ModelForm):
+    delegated_recipient = ActiveUserChoiceField(
+        queryset=get_user_model().objects.none(),
+        required=True,
+        empty_label='Select new receiver',
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'data-searchable-select': 'true',
+            'data-search-placeholder': 'Search or select new receiver',
+        }),
+        label='New Receiver',
+    )
+
+    class Meta:
+        model = DocumentDelegation
+        fields = [
+            'delegated_recipient',
+            'reason',
+        ]
+        widgets = {
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Explain why this receipt is being delegated',
+            }),
+        }
+        labels = {
+            'reason': 'Reason for Delegation',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.document = kwargs.pop('document')
+        super().__init__(*args, **kwargs)
+        self.fields['reason'].error_messages['required'] = 'Reason for delegation is required.'
+        self.fields['delegated_recipient'].queryset = get_user_model().objects.filter(
+            is_active=True,
+        ).order_by('first_name', 'last_name', 'username')
+
+    def clean_delegated_recipient(self):
+        delegated_recipient = self.cleaned_data.get('delegated_recipient')
+        if (
+            delegated_recipient and
+            self.document.designated_person_id and
+            delegated_recipient.pk == self.document.designated_person_id
+        ):
+            raise forms.ValidationError('New receiver cannot be the original designated person.')
+        return delegated_recipient
+
+    def clean_reason(self):
+        reason = (self.cleaned_data.get('reason') or '').strip()
+        if not reason:
+            raise forms.ValidationError('Reason for delegation is required.')
+        return reason
+
+
+class UserDelegationRuleForm(forms.ModelForm):
+    backup_receiver = ActiveUserChoiceField(
+        queryset=get_user_model().objects.none(),
+        required=True,
+        empty_label='Select backup receiver',
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'data-searchable-select': 'true',
+            'data-search-placeholder': 'Search or select backup receiver',
+        }),
+        label='Backup Receiver',
+    )
+
+    class Meta:
+        model = UserDelegationRule
+        fields = [
+            'backup_receiver',
+            'start_date',
+            'end_date',
+            'reason',
+        ]
+        widgets = {
+            'start_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'end_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'reason': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Reason for temporary delegation',
+            }),
+        }
+        labels = {
+            'start_date': 'Start Date',
+            'end_date': 'End Date',
+            'reason': 'Reason',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user')
+        super().__init__(*args, **kwargs)
+        self.fields['backup_receiver'].queryset = get_user_model().objects.filter(
+            is_active=True,
+        ).exclude(pk=self.user.pk).order_by('first_name', 'last_name', 'username')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        backup_receiver = cleaned_data.get('backup_receiver')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        reason = (cleaned_data.get('reason') or '').strip()
+
+        if backup_receiver and backup_receiver.pk == self.user.pk:
+            self.add_error('backup_receiver', 'Backup receiver cannot be the same user.')
+
+        if start_date and end_date and end_date < start_date:
+            self.add_error('end_date', 'End date cannot be before start date.')
+
+        if not reason:
+            self.add_error('reason', 'Reason is required.')
+        else:
+            cleaned_data['reason'] = reason
+
+        return cleaned_data
 
 
 class DocumentMovementForm(forms.ModelForm):

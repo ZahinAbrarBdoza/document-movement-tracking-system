@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Delegate Receipt | Padakhep Document Tracker{% endblock %}
+{% block page_title %}Delegate Receipt{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Delegate Receipt</h2>
+            <p>Nominate another active user to receive or act on this physical document.</p>
+        </div>
+
+        <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Back to Details</a>
+    </section>
+
+    <section class="detail-card" style="margin-bottom: 22px;">
+        <div class="detail-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span>Tracking ID</span>
+                    <strong>{{ document.tracking_id }}</strong>
+                </div>
+
+                <div class="info-item">
+                    <span>Original Recipient</span>
+                    <strong>
+                        {% if document.designated_person %}
+                            {{ document.designated_person.get_full_name|default:document.designated_person.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="info-item full">
+                    <span>Subject</span>
+                    <strong>{{ document.subject|default:"Subject not mentioned" }}</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% if temporary_rule %}
+        <div class="notice-box">
+            Active temporary delegation rule found. Backup receiver has been preselected when possible.
+        </div>
+    {% endif %}
+
+    <form method="post" class="form-layout">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="error-box">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="form-section">
+            <div class="form-section-header">
+                <h3>Delegate Receipt</h3>
+                <p>Reason is required and will be recorded in movement history.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.delegated_recipient.id_for_label }}">{{ form.delegated_recipient.label }} <span class="required-marker">*</span></label>
+                    {{ form.delegated_recipient }}
+                    {% for error in form.delegated_recipient.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group form-span-2">
+                    <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }} <span class="required-marker">*</span></label>
+                    {{ form.reason }}
+                    {% for error in form.reason.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <div class="form-footer">
+            <a href="{% url 'document_detail' document.pk %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-save">Delegate Receipt</button>
+        </div>
+    </form>
+{% endblock %}

@@ -53,8 +53,14 @@
                     </a>
                 {% endif %}
 
+                <a href="{% url 'my_delegation_settings' %}" class="nav-link{% if current_url == 'my_delegation_settings' or current_url == 'document_delegate_receipt' %} active{% endif %}">My Delegation Settings</a>
+
                 {% if global_can_view_reports %}
                     <a href="{% url 'reports_dashboard' %}" class="nav-link{% if current_url == 'reports_dashboard' or current_url == 'export_documents_excel' %} active{% endif %}">Reports</a>
+                {% endif %}
+
+                {% if global_can_view_delegation_reports %}
+                    <a href="{% url 'delegation_report' %}" class="nav-link{% if current_url == 'delegation_report' %} active{% endif %}">Delegation Report</a>
                 {% endif %}
 
                 {% if request.user.is_superuser %}

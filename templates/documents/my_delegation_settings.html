@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}My Delegation Settings | Padakhep Document Tracker{% endblock %}
+{% block page_title %}My Delegation Settings{% endblock %}
+
+{% block content %}
+    <section class="page-actions">
+        <div>
+            <h2>Temporary Delegation</h2>
+            <p>Create a leave-period backup receiver suggestion for document-level delegation.</p>
+        </div>
+    </section>
+
+    {% if active_rule %}
+        <div class="notice-box">
+            Active rule: {{ active_rule.backup_receiver.get_full_name|default:active_rule.backup_receiver.username }}
+            from {{ active_rule.start_date|date:"d M Y" }} to {{ active_rule.end_date|date:"d M Y" }}.
+        </div>
+    {% endif %}
+
+    <form method="post" class="form-layout" style="margin-bottom: 22px;">
+        {% csrf_token %}
+
+        <section class="form-section">
+            <div class="form-section-header">
+                <h3>Create Temporary Delegation Rule</h3>
+                <p>This does not auto-delegate documents. It only suggests a receiver on the Delegate Receipt form.</p>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="{{ form.backup_receiver.id_for_label }}">{{ form.backup_receiver.label }} <span class="required-marker">*</span></label>
+                    {{ form.backup_receiver }}
+                    {% for error in form.backup_receiver.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }} <span class="required-marker">*</span></label>
+                    {{ form.start_date }}
+                    {% for error in form.start_date.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }} <span class="required-marker">*</span></label>
+                    {{ form.end_date }}
+                    {% for error in form.end_date.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group form-span-2">
+                    <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }} <span class="required-marker">*</span></label>
+                    {{ form.reason }}
+                    {% for error in form.reason.errors %}
+                        <div class="form-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <div class="form-footer">
+            <a href="{% url 'dashboard' %}" class="btn-secondary">Cancel</a>
+            <button type="submit" class="btn-save">Save Rule</button>
+        </div>
+    </form>
+
+    <section class="card">
+        <div class="card-header">
+            <h3>My Rules</h3>
+        </div>
+
+        <div class="table-wrap">
+            {% if rules %}
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Backup Receiver</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Status</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                            <tr>
+                                <td>{{ rule.backup_receiver.get_full_name|default:rule.backup_receiver.username }}</td>
+                                <td>{{ rule.start_date|date:"d M Y" }}</td>
+                                <td>{{ rule.end_date|date:"d M Y" }}</td>
+                                <td>{% if rule.is_active %}<span class="badge">Active</span>{% else %}Inactive{% endif %}</td>
+                                <td>{{ rule.reason }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="empty-state">No temporary delegation rules found.</div>
+            {% endif %}
+        </div>
+    </section>
+{% endblock %}
